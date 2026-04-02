@@ -1,0 +1,201 @@
+docs/deep-dive/09-context-management.md
+  6c2e77475783fcfb 1-583
+docs/deep-dive/04-prompt-engineering.md
+  b92e5369c376be72 1-396
+docs/deep-dive/06-delegation.md
+  2dd6acf66b2cd2c7 1-487
+docs/deep-dive/01-concepts.md
+  373dd001666825ea 1-267
+docs/deep-dive/05-hooks.md
+  7c97429a8855f5de 1-180
+docs/deep-dive/README.md
+  0ccdbf9876f6cd8a 49
+  d8562089e81feba4 70-71
+  f22da4c497b0e50d 1-48,50-69,72-87
+docs/deep-dive/08-patterns.md
+  f0bb3e7c88550ecb 1-237
+docs/guide/keywords.md
+  09205b4739db9228 1-116
+docs/deep-dive/02-architecture.md
+  ce3a7791c65103b3 1-477
+docs/deep-dive/03-agents.md
+  5e54c2561aaaa855 1-325
+docs/deep-dive/07-extending.md
+  eb730db138ec70d9 1-213
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.2.5",
+  "base_commit_sha": "cc8f9c66f0cb2086edbd5225fb42517ae4f3e754",
+  "prompts": {
+    "09205b4739db9228": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "opencode-transcript-ses_2fe7a1046ffeqIo47Nmaadvy3o-fd8b387e-8f53-4964-866c-ff556b754985",
+        "model": "unknown"
+      },
+      "human_author": "Will B",
+      "messages": [],
+      "total_additions": 116,
+      "total_deletions": 0,
+      "accepted_lines": 116,
+      "overriden_lines": 0
+    },
+    "0ccdbf9876f6cd8a": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "opencode-transcript-ses_2b5ae1236ffe50peJdiRmEDNAk-0b5115ae-af69-4150-af0b-b39280f939d0",
+        "model": "unknown"
+      },
+      "human_author": "Will B",
+      "messages": [],
+      "total_additions": 1,
+      "total_deletions": 0,
+      "accepted_lines": 1,
+      "overriden_lines": 0
+    },
+    "2dd6acf66b2cd2c7": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "opencode-transcript-ses_2fe7a1046ffeqIo47Nmaadvy3o-c8ef9560-0cf0-4679-875a-f3436cce6fb0",
+        "model": "unknown"
+      },
+      "human_author": "Will B",
+      "messages": [],
+      "total_additions": 487,
+      "total_deletions": 0,
+      "accepted_lines": 487,
+      "overriden_lines": 0
+    },
+    "373dd001666825ea": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "opencode-transcript-ses_2fe7a1046ffeqIo47Nmaadvy3o-06938a2f-cd6f-423a-bb5c-e246b12a934d",
+        "model": "unknown"
+      },
+      "human_author": "Will B",
+      "messages": [],
+      "total_additions": 269,
+      "total_deletions": 0,
+      "accepted_lines": 267,
+      "overriden_lines": 0
+    },
+    "5e54c2561aaaa855": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "opencode-transcript-ses_2fe7a1046ffeqIo47Nmaadvy3o-451bf74f-3245-445c-9a2b-62af0f29cd06",
+        "model": "unknown"
+      },
+      "human_author": "Will B",
+      "messages": [],
+      "total_additions": 325,
+      "total_deletions": 0,
+      "accepted_lines": 325,
+      "overriden_lines": 0
+    },
+    "6c2e77475783fcfb": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "opencode-transcript-ses_2b5ae1236ffe50peJdiRmEDNAk-305dac0a-f425-4e79-b53f-98f5620c067a",
+        "model": "unknown"
+      },
+      "human_author": "Will B",
+      "messages": [],
+      "total_additions": 583,
+      "total_deletions": 0,
+      "accepted_lines": 583,
+      "overriden_lines": 0
+    },
+    "7c97429a8855f5de": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "opencode-transcript-ses_2bfbe3f33ffe45iEvTalgPnhMV-fc4d7902-0156-4ea7-a1f5-aaa8f1bc7893",
+        "model": "unknown"
+      },
+      "human_author": "Will B",
+      "messages": [],
+      "total_additions": 180,
+      "total_deletions": 0,
+      "accepted_lines": 180,
+      "overriden_lines": 0
+    },
+    "b92e5369c376be72": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "opencode-transcript-ses_2fe7a1046ffeqIo47Nmaadvy3o-0d2b8a51-5f1d-498c-8df1-c8f4aa7d2702",
+        "model": "unknown"
+      },
+      "human_author": "Will B",
+      "messages": [],
+      "total_additions": 396,
+      "total_deletions": 0,
+      "accepted_lines": 396,
+      "overriden_lines": 0
+    },
+    "ce3a7791c65103b3": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "opencode-transcript-ses_2fe7a1046ffeqIo47Nmaadvy3o-758197d5-95a1-425b-a657-9aca6757fdc5",
+        "model": "unknown"
+      },
+      "human_author": "Will B",
+      "messages": [],
+      "total_additions": 477,
+      "total_deletions": 0,
+      "accepted_lines": 477,
+      "overriden_lines": 0
+    },
+    "d8562089e81feba4": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "opencode-transcript-ses_2b5ae1236ffe50peJdiRmEDNAk-1177e4c8-5bd4-43fb-909e-665fe30999a5",
+        "model": "unknown"
+      },
+      "human_author": "Will B",
+      "messages": [],
+      "total_additions": 2,
+      "total_deletions": 0,
+      "accepted_lines": 2,
+      "overriden_lines": 0
+    },
+    "eb730db138ec70d9": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "opencode-transcript-ses_2bfbdedadffex15FI3gMs3pYAA-d13b3eca-789d-450f-9236-16a426f80d32",
+        "model": "unknown"
+      },
+      "human_author": "Will B",
+      "messages": [],
+      "total_additions": 213,
+      "total_deletions": 0,
+      "accepted_lines": 213,
+      "overriden_lines": 0
+    },
+    "f0bb3e7c88550ecb": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "opencode-transcript-ses_2bfbd615fffee6vGBYtt2lOypg-ae9ec522-d4aa-4e13-ac74-ab565647717d",
+        "model": "unknown"
+      },
+      "human_author": "Will B",
+      "messages": [],
+      "total_additions": 237,
+      "total_deletions": 0,
+      "accepted_lines": 237,
+      "overriden_lines": 0
+    },
+    "f22da4c497b0e50d": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "opencode-transcript-ses_2fe7a1046ffeqIo47Nmaadvy3o-292076f9-216b-4462-8433-d2599394e401",
+        "model": "unknown"
+      },
+      "human_author": "Will B",
+      "messages": [],
+      "total_additions": 84,
+      "total_deletions": 0,
+      "accepted_lines": 84,
+      "overriden_lines": 0
+    }
+  }
+}
