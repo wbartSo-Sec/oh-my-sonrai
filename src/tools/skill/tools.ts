@@ -1,5 +1,6 @@
 import { dirname } from "node:path"
 import { tool, type ToolDefinition } from "@opencode-ai/plugin"
+import type { ToolContext } from "@opencode-ai/plugin/tool"
 import { TOOL_DESCRIPTION_NO_SKILLS, TOOL_DESCRIPTION_PREFIX } from "./constants"
 import type { SkillArgs, SkillInfo, SkillLoadOptions } from "./types"
 import type { LoadedSkill } from "../../features/opencode-skill-loader"
@@ -265,8 +266,8 @@ export function createSkillTool(options: SkillLoadOptions = {}): ToolDefinition 
     })
   }
 
-  const buildDescription = async (): Promise<string> => {
-    if (cachedDescription) return cachedDescription
+  const buildDescription = async (force = false): Promise<string> => {
+    if (!force && cachedDescription) return cachedDescription
     const skills = await getSkills()
     const commands = getCommands()
     const skillInfos = skills.map(loadedSkillToInfo)
@@ -294,7 +295,7 @@ export function createSkillTool(options: SkillLoadOptions = {}): ToolDefinition 
 
     cachedDescription = formatCombinedDescription(skillInfos, commandsForDescription)
     if (needsAsyncRefresh) {
-      void buildDescription()
+      void buildDescription(true)
     }
   } else if (options.commands !== undefined) {
     cachedDescription = formatCombinedDescription([], options.commands)
@@ -316,7 +317,7 @@ export function createSkillTool(options: SkillLoadOptions = {}): ToolDefinition 
         .optional()
         .describe("Optional arguments or context for command invocation. Example: name='publish', user_message='patch'"),
     },
-    async execute(args: SkillArgs, ctx?: { agent?: string }) {
+    async execute(args: SkillArgs, ctx?: ToolContext) {
       const skills = await getSkills()
       const commands = getCommands()
       cachedDescription = formatCombinedDescription(skills.map(loadedSkillToInfo), commands)
@@ -324,7 +325,19 @@ export function createSkillTool(options: SkillLoadOptions = {}): ToolDefinition 
       const requestedName = args.name.replace(/^\//, "")
 
       // Check skills first (exact match, case-insensitive)
-      const matchedSkill = skills.find(s => s.name.toLowerCase() === requestedName.toLowerCase())
+      let matchedSkill = skills.find(s => s.name.toLowerCase() === requestedName.toLowerCase())
+
+      // Fallback: try matching by short name (basename) for namespaced skills
+      // e.g. "systematic-debugging" matches "superpowers/systematic-debugging"
+      if (!matchedSkill) {
+        const shortNameMatches = skills.filter(s => {
+          const parts = s.name.split("/")
+          return parts.length > 1 && parts[parts.length - 1].toLowerCase() === requestedName.toLowerCase()
+        })
+        if (shortNameMatches.length === 1) {
+          matchedSkill = shortNameMatches[0]
+        }
+      }
 
       if (matchedSkill) {
         if (matchedSkill.definition.agent && (!ctx?.agent || matchedSkill.definition.agent !== ctx.agent)) {
@@ -347,11 +360,17 @@ export function createSkillTool(options: SkillLoadOptions = {}): ToolDefinition 
           body,
         ]
 
-        if (options.mcpManager && options.getSessionID && matchedSkill.mcpConfig) {
+        if (options.mcpManager && matchedSkill.mcpConfig) {
+          const sessionID = ctx?.sessionID || options.getSessionID?.()
+
+          if (!sessionID) {
+            return output.join("\n")
+          }
+
           const mcpInfo = await formatMcpCapabilities(
             matchedSkill,
             options.mcpManager,
-            options.getSessionID()
+            sessionID
           )
           if (mcpInfo) {
             output.push(mcpInfo)

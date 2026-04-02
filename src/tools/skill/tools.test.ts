@@ -172,6 +172,34 @@ describe("skill tool - MCP schema display", () => {
   })
 
   describe("formatMcpCapabilities with inputSchema", () => {
+    it("uses the tool context sessionID when the fallback getter is empty", async () => {
+      // given
+      loadedSkills = [
+        createMockSkillWithMcp("test-skill", {
+          playwright: { command: "npx", args: ["-y", "@anthropic-ai/mcp-playwright"] },
+        }),
+      ]
+
+      const listToolsSpy = spyOn(manager, "listTools").mockResolvedValue([])
+      spyOn(manager, "listResources").mockResolvedValue([])
+      spyOn(manager, "listPrompts").mockResolvedValue([])
+
+      const tool = createSkillTool({
+        skills: loadedSkills,
+        mcpManager: manager,
+        getSessionID: () => "",
+      })
+
+      // when
+      await tool.execute({ name: "test-skill" }, mockContext)
+
+      // then
+      expect(listToolsSpy).toHaveBeenCalledWith(
+        expect.objectContaining({ sessionID: mockContext.sessionID }),
+        expect.any(Object),
+      )
+    })
+
     it("displays tool inputSchema when available", async () => {
       // given
       const mockToolsWithSchema: McpTool[] = [
@@ -668,5 +696,60 @@ describe("skill tool - nativeSkills integration", () => {
     //#then
     expect(result).toContain("external-plugin-skill")
     expect(result).toContain("External plugin skill body")
+  })
+})
+
+describe("skill tool - short name resolution", () => {
+  it("resolves namespaced skill by short name when unambiguous", async () => {
+    // given
+    const loadedSkills = [createMockSkill("superpowers/systematic-debugging")]
+    const tool = createSkillTool({ skills: loadedSkills })
+
+    // when
+    const result = await tool.execute({ name: "systematic-debugging" }, mockContext)
+
+    // then
+    expect(result).toContain("superpowers/systematic-debugging")
+  })
+
+  it("still resolves by exact full name", async () => {
+    // given
+    const loadedSkills = [createMockSkill("superpowers/systematic-debugging")]
+    const tool = createSkillTool({ skills: loadedSkills })
+
+    // when
+    const result = await tool.execute({ name: "superpowers/systematic-debugging" }, mockContext)
+
+    // then
+    expect(result).toContain("superpowers/systematic-debugging")
+  })
+
+  it("does not resolve short name when ambiguous (multiple matches)", async () => {
+    // given
+    const loadedSkills = [
+      createMockSkill("superpowers/debugging"),
+      createMockSkill("utils/debugging"),
+    ]
+    const tool = createSkillTool({ skills: loadedSkills })
+
+    // when / then — should not resolve (ambiguous), should suggest both
+    await expect(tool.execute({ name: "debugging" }, mockContext)).rejects.toThrow(
+      "not found"
+    )
+  })
+
+  it("prefers exact match over short name match", async () => {
+    // given — "debugging" exists as both exact and as part of a namespace
+    const loadedSkills = [
+      createMockSkill("debugging"),
+      createMockSkill("superpowers/debugging"),
+    ]
+    const tool = createSkillTool({ skills: loadedSkills })
+
+    // when
+    const result = await tool.execute({ name: "debugging" }, mockContext)
+
+    // then — should match "debugging" exactly, not "superpowers/debugging"
+    expect(result).toContain("## Skill: debugging")
   })
 })
