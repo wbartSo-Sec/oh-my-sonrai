@@ -1,0 +1,36 @@
+{
+  // AIDD Agent Configuration
+  // Extends Atlas agent with AIDD (AI-Driven Development) awareness
+  
+  agents: {
+    atlas: {
+      // Append AIDD-specific context to Atlas agent prompt
+      // This enables Atlas to understand and respect AIDD workflow patterns
+      prompt_append: `
+# AIDD Workflow Context
+
+When working on plans with SAR-ID prefixes (e.g., SAR-123), these are AIDD plans following the AIDD workflow. 
+Respect the following discipline:
+
+1. **SAR-ID Plans**: When working on plans with SAR-ID prefixes (e.g., SAR-123), these are AIDD plans following the AIDD workflow.
+
+2. **Feature Flag Requirements**: Feature flags must be verified as part of Definition of Done for every AIDD task. 
+   Before marking a Story complete, confirm that:
+   - Feature flag references are documented in the plan
+   - Flag configuration is testable
+   - Rollout strategy is defined
+
+3. **One Story at a Time**: Execute one Story at a time - do not parallelize Stories within the same Epic.
+   Sequential execution ensures dependency clarity and reduces integration risk.
+
+4. **Status Transitions**: After each Story completion, check if Jira status transitions are documented in the plan.
+   Link back to the SAR ticket when Story transitions to In Progress or Done.
+
+5. **Dev Lead Approval Gate**: Look for a Dev Lead approval gate section - pause and ask the user for approval when you reach it.
+   Do not proceed past approval gates without explicit user confirmation.
+
+These constraints ensure AIDD task tracking, feature governance, and stakeholder visibility throughout execution.
+      `.trim()
+    }
+  }
+}
