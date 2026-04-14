@@ -3,11 +3,22 @@ import type { ExecutorContext } from "./executor-types"
 import type { DelegatedModelConfig } from "./types"
 import { isPlanFamily } from "./constants"
 import { SISYPHUS_JUNIOR_AGENT } from "./sisyphus-junior-agent"
+import { applyCategoryParams } from "./delegated-model-config"
+import { resolveEffectiveFallbackEntry } from "./fallback-entry-resolution"
+import { applyFallbackEntrySettings } from "./fallback-entry-settings"
+import {
+  type AgentInfo,
+  sanitizeSubagentType,
+  mergeWithClaudeCodeAgents,
+  findPrimaryAgentMatch,
+  findCallableAgentMatch,
+  listCallableAgentNames,
+} from "./subagent-discovery"
 import { normalizeModelFormat } from "../../shared/model-format-normalizer"
 import { AGENT_MODEL_REQUIREMENTS } from "../../shared/model-requirements"
 import { normalizeFallbackModels, flattenToFallbackModelStrings } from "../../shared/model-resolver"
-import { buildFallbackChainFromModels, findMostSpecificFallbackEntry } from "../../shared/fallback-chain-from-models"
-import { getAgentDisplayName, getAgentConfigKey } from "../../shared/agent-display-names"
+import { buildFallbackChainFromModels } from "../../shared/fallback-chain-from-models"
+import { getAgentConfigKey, stripAgentListSortPrefix } from "../../shared/agent-display-names"
 import { normalizeSDKResponse } from "../../shared"
 import { log } from "../../shared/logger"
 import { getAvailableModelsForDelegateTask } from "./available-models"
@@ -27,7 +38,7 @@ export async function resolveSubagentExecution(
     return { agentToUse: "", categoryModel: undefined, error: `Agent name cannot be empty.` }
   }
 
-  const agentName = args.subagent_type.trim()
+  const agentName = sanitizeSubagentType(args.subagent_type)
 
   if (agentName.toLowerCase() === SISYPHUS_JUNIOR_AGENT.toLowerCase()) {
     return {
@@ -55,59 +66,43 @@ Create the work plan directly - that's your job as the planning agent.`,
 
   try {
     const agentsResult = await client.app.agents()
-    type AgentInfo = {
-      name: string
-      mode?: "subagent" | "primary" | "all"
-      model?: string | { providerID: string; modelID: string }
-    }
     const agents = normalizeSDKResponse(agentsResult, [] as AgentInfo[], {
       preferResponseOnMissingData: true,
     })
 
-    const callableAgents = agents.filter((a) => a.mode !== "primary")
+    const mergedAgents = mergeWithClaudeCodeAgents(agents, executorCtx.directory)
+    const matchedPrimaryAgent = findPrimaryAgentMatch(mergedAgents, agentToUse)
 
-    const resolvedDisplayName = getAgentDisplayName(agentToUse)
-    const matchedAgent = callableAgents.find(
-      (agent) => agent.name.toLowerCase() === agentToUse.toLowerCase()
-        || agent.name.toLowerCase() === resolvedDisplayName.toLowerCase()
-    )
-    if (!matchedAgent) {
-      const isPrimaryAgent = agents
-        .filter((a) => a.mode === "primary")
-        .find((agent) => agent.name.toLowerCase() === agentToUse.toLowerCase()
-          || agent.name.toLowerCase() === resolvedDisplayName.toLowerCase())
-
-      if (isPrimaryAgent) {
-        return {
-          agentToUse: "",
-          categoryModel: undefined,
-    error: `Cannot call primary agent "${isPrimaryAgent.name}" via task. Primary agents are top-level orchestrators.`,
-        }
-      }
-
-      const availableAgents = callableAgents
-        .map((a) => a.name)
-        .sort()
-        .join(", ")
+    if (matchedPrimaryAgent) {
       return {
         agentToUse: "",
         categoryModel: undefined,
-        error: `Unknown agent: "${agentToUse}". Available agents: ${availableAgents}`,
+        error: `Cannot delegate to primary agent "${stripAgentListSortPrefix(matchedPrimaryAgent.name)}" via task. Select that agent directly instead.`,
       }
     }
 
-    agentToUse = matchedAgent.name
+    const matchedAgent = findCallableAgentMatch(mergedAgents, agentToUse)
+    if (!matchedAgent) {
+      return {
+        agentToUse: "",
+        categoryModel: undefined,
+        error: `Unknown agent: "${agentToUse}". Available agents: ${listCallableAgentNames(mergedAgents)}`,
+      }
+    }
+
+    agentToUse = stripAgentListSortPrefix(matchedAgent.name)
 
     const agentConfigKey = getAgentConfigKey(agentToUse)
     const agentOverride = agentOverrides?.[agentConfigKey as keyof typeof agentOverrides]
       ?? (agentOverrides ? Object.entries(agentOverrides).find(([key]) => key.toLowerCase() === agentConfigKey)?.[1] : undefined)
     const agentRequirement = AGENT_MODEL_REQUIREMENTS[agentConfigKey]
-    const agentCategoryModel = agentOverride?.category
-      ? userCategories?.[agentOverride.category]?.model
+    const agentCategoryConfig = agentOverride?.category
+      ? userCategories?.[agentOverride.category]
       : undefined
+    const agentCategoryModel = agentCategoryConfig?.model
     const normalizedAgentFallbackModels = normalizeFallbackModels(
       agentOverride?.fallback_models
-      ?? (agentOverride?.category ? userCategories?.[agentOverride.category]?.fallback_models : undefined)
+      ?? agentCategoryConfig?.fallback_models
     )
 
     const availableModels = await getAvailableModelsForDelegateTask(client)
@@ -135,19 +130,16 @@ Create the work plan directly - that's your job as the planning agent.`,
       if (resolution && !resolutionSkipped) {
         const normalized = normalizeModelFormat(resolution.model)
         if (normalized) {
-          const variantToUse = agentOverride?.variant ?? resolution.variant
-          categoryModel = variantToUse ? { ...normalized, variant: variantToUse } : normalized
+          const variantToUse = agentOverride?.variant ?? resolution.variant ?? agentCategoryConfig?.variant
+          const resolvedModel = variantToUse ? { ...normalized, variant: variantToUse } : normalized
+          categoryModel = applyCategoryParams(resolvedModel, agentCategoryConfig)
         }
       } else if (resolutionSkipped && (agentOverride?.model ?? agentCategoryModel)) {
-        // Cold cache: resolution was skipped but user explicitly configured a model.
-        // Honor the user override directly — don't fall through to hardcoded fallback chain.
         const normalized = normalizeModelFormat((agentOverride?.model ?? agentCategoryModel)!)
         if (normalized) {
-          const agentCategoryVariant = agentOverride?.category
-            ? userCategories?.[agentOverride.category]?.variant
-            : undefined
-          const variantToUse = agentOverride?.variant ?? agentCategoryVariant
-          categoryModel = variantToUse ? { ...normalized, variant: variantToUse } : normalized
+          const variantToUse = agentOverride?.variant ?? agentCategoryConfig?.variant
+          const resolvedModel = variantToUse ? { ...normalized, variant: variantToUse } : normalized
+          categoryModel = applyCategoryParams(resolvedModel, agentCategoryConfig)
           log("[delegate-task] Cold cache: using explicit user override for subagent", {
             agent: agentToUse,
             model: agentOverride?.model ?? agentCategoryModel,
@@ -162,32 +154,19 @@ Create the work plan directly - that's your job as the planning agent.`,
         normalizedAgentFallbackModels,
         defaultProviderID,
       )
-      // Don't assign hardcoded fallback chain when resolution was skipped (cold cache)
-      // — the chain may contain model IDs that don't exist in the provider yet.
       fallbackChain = configuredFallbackChain ?? (resolutionSkipped ? undefined : agentRequirement?.fallbackChain)
-
-      // Only promote fallback-only settings when resolution actually selected a fallback model.
-      const resolvedFallbackEntry = (resolution && !('skipped' in resolution)) ? resolution.fallbackEntry : undefined
-      const matchedFallback = (resolution && !('skipped' in resolution)) ? resolution.matchedFallback === true : false
-      const effectiveEntry = matchedFallback && categoryModel
-        ? (
-            resolvedFallbackEntry
-            ?? (configuredFallbackChain
-              ? findMostSpecificFallbackEntry(categoryModel.providerID, categoryModel.modelID, configuredFallbackChain)
-              : undefined)
-          )
-        : undefined
+      const effectiveEntry = resolveEffectiveFallbackEntry({
+        categoryModel,
+        configuredFallbackChain,
+        resolution,
+      })
 
       if (categoryModel && effectiveEntry) {
-        categoryModel = {
-          ...categoryModel,
-          variant: agentOverride?.variant ?? effectiveEntry.variant ?? categoryModel.variant,
-          reasoningEffort: effectiveEntry.reasoningEffort,
-          temperature: effectiveEntry.temperature,
-          top_p: effectiveEntry.top_p,
-          maxTokens: effectiveEntry.maxTokens,
-          thinking: effectiveEntry.thinking,
-        }
+        categoryModel = applyFallbackEntrySettings({
+          categoryModel,
+          effectiveEntry,
+          variantOverride: agentOverride?.variant,
+        })
       }
     }
 

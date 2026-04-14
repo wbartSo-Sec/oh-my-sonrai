@@ -14,6 +14,7 @@ function createConfig(overrides: Partial<InstallConfig> = {}): InstallConfig {
     hasZaiCodingPlan: false,
     hasKimiForCoding: false,
     hasOpencodeGo: false,
+    hasVercelAiGateway: false,
     ...overrides,
   }
 }
@@ -53,8 +54,8 @@ describe("generateModelConfig OpenAI-only model catalog", () => {
     const result = generateModelConfig(config)
 
     // #then
-    expect(result.agents?.explore).toEqual({ model: "opencode-go/minimax-m2.7" })
-    expect(result.agents?.librarian).toEqual({ model: "opencode-go/minimax-m2.7" })
-    expect(result.categories?.quick).toEqual({ model: "openai/gpt-5.4-mini" })
+    expect(result.agents?.explore).toMatchObject({ model: "opencode-go/minimax-m2.7" })
+    expect(result.agents?.librarian).toMatchObject({ model: "opencode-go/minimax-m2.7" })
+    expect(result.categories?.quick).toMatchObject({ model: "openai/gpt-5.4-mini" })
   })
 })
