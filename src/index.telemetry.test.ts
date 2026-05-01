@@ -29,7 +29,6 @@ const mockCreateHooks = mock(() => ({
   compactionTodoPreserver: undefined,
   claudeCodeHooks: undefined,
 }))
-const mockCreatePluginDispose = mock(() => async () => {})
 const mockCreatePluginInterface = mock(() => ({}))
 const mockCreatePluginPostHog = mock(() => ({
   trackActive: () => {
@@ -70,9 +69,6 @@ function installModuleMocks(): void {
   mock.module("./create-hooks", () => ({
     createHooks: mockCreateHooks,
   }))
-  mock.module("./plugin-dispose", () => ({
-    createPluginDispose: mockCreatePluginDispose,
-  }))
   mock.module("./plugin-interface", () => ({
     createPluginInterface: mockCreatePluginInterface,
   }))
@@ -108,9 +104,15 @@ function installModuleMocks(): void {
     createPluginPostHog: mockCreatePluginPostHog,
     getPostHogDistinctId: mockGetPostHogDistinctId,
   }))
+  mock.module("./shared/posthog-activity-state", () => ({
+    getPluginLoadedCaptureState: () => ({
+      dayUTC: "2026-04-18",
+      capturePluginLoaded: true,
+    }),
+  }))
 }
 
-describe("OhMyOpenCodePlugin telemetry isolation", () => {
+describe("oh-my-openagent telemetry isolation", () => {
   beforeEach(() => {
     mock.restore()
     installModuleMocks()
@@ -125,12 +127,13 @@ describe("OhMyOpenCodePlugin telemetry isolation", () => {
     const { default: plugin } = await import(`./index?telemetry=${Date.now()}-${Math.random()}`)
 
     // when
-    const result = await plugin({
+    const result = await plugin.server({
       directory: "/tmp/project",
       client: {},
-    } as Parameters<typeof plugin>[0])
+    } as Parameters<typeof plugin.server>[0])
 
     // then
-    expect(result).toMatchObject({ name: "oh-my-openagent" })
+    expect(typeof result).toBe("object")
+    expect(result).not.toBeNull()
   })
 })

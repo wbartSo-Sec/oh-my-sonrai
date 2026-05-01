@@ -104,11 +104,14 @@ describeFn("executeBackgroundTask output/session metadata compatibility", () => 
     //#then - output and metadata should include canonical session linkage
     expectFn(result).toContain("<task_metadata>")
     expectFn(result).toContain("session_id: ses_sub_123")
-    expectFn(result).toContain("task_id: bg_resolved")
+    expectFn(result).toContain("task_id: ses_sub_123")
     expectFn(result).toContain("background_task_id: bg_resolved")
+    expectFn(result).toContain("subagent: explore")
     expectFn(result).toContain("Background Task ID: bg_resolved")
     expectFn(metadataCalls).toHaveLength(1)
     expectFn(metadataCalls[0].metadata.sessionId).toBe("ses_sub_123")
+    expectFn(metadataCalls[0].metadata.taskId).toBe("ses_sub_123")
+    expectFn(metadataCalls[0].metadata.backgroundTaskId).toBe("bg_resolved")
   })
 
   testFn("captures late-resolved session id and emits synced metadata", async () => {
@@ -152,10 +155,12 @@ describeFn("executeBackgroundTask output/session metadata compatibility", () => 
 
     //#then - late session id still propagates to task metadata contract
     expectFn(result).toContain("session_id: ses_late_123")
-    expectFn(result).toContain("task_id: bg_late")
+    expectFn(result).toContain("task_id: ses_late_123")
     expectFn(result).toContain("background_task_id: bg_late")
     expectFn(metadataCalls).toHaveLength(1)
     expectFn(metadataCalls[0].metadata.sessionId).toBe("ses_late_123")
+    expectFn(metadataCalls[0].metadata.taskId).toBe("ses_late_123")
+    expectFn(metadataCalls[0].metadata.backgroundTaskId).toBe("bg_late")
   })
 
   testFn("passes question-deny session permission when launching delegate task", async () => {
@@ -516,5 +521,49 @@ describeFn("executeBackgroundTask output/session metadata compatibility", () => 
     expectFn(secondResult).toContain("Background task launched")
     expectFn(secondResult).toContain("session_id: ses_second")
     expectFn(secondResult).not.toContain("interrupt")
+  })
+
+  testFn("strips legacy ZWSP-prefixed agent names from persisted background task launch input (GH-3259)", async () => {
+    //#given - persisted launch input from v3.14.0-v3.16.0 with ZWSP prefix on agent
+    const launchCalls: Array<{ agent: string }> = []
+    const manager = {
+      launch: async (input: { agent: string }) => {
+        launchCalls.push(input)
+        return {
+          id: "bg_legacy_zwsp",
+          sessionID: "ses_legacy_zwsp",
+          description: "Legacy ZWSP",
+          agent: "Hephaestus - Deep Agent",
+          status: "running",
+        }
+      },
+      getTask: () => ({ sessionID: "ses_legacy_zwsp" }),
+    }
+
+    //#when
+    await executeBackgroundTask(
+      {
+        description: "Legacy ZWSP",
+        prompt: "check",
+        run_in_background: true,
+        load_skills: [],
+      },
+      {
+        sessionID: "ses_parent",
+        callID: "call_legacy_zwsp",
+        metadata: async () => {},
+        abort: new AbortController().signal,
+      },
+      { manager },
+      { sessionID: "ses_parent", messageID: "msg_legacy_zwsp" },
+      "\u200B\u200BHephaestus - Deep Agent",
+      undefined,
+      undefined,
+      undefined,
+    )
+
+    //#then
+    expectFn(launchCalls).toHaveLength(1)
+    expectFn(launchCalls[0].agent).toBe("Hephaestus - Deep Agent")
   })
 })

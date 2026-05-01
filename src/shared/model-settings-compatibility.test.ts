@@ -1,12 +1,13 @@
 import { describe, expect, test } from "bun:test"
 
+import { getModelCapabilities } from "./model-capabilities"
 import { resolveCompatibleModelSettings } from "./model-settings-compatibility"
 
 describe("resolveCompatibleModelSettings", () => {
   test("keeps supported Claude Opus variant unchanged", () => {
     const result = resolveCompatibleModelSettings({
       providerID: "anthropic",
-      modelID: "claude-opus-4-6",
+      modelID: "claude-opus-4-7",
       desired: { variant: "max" },
     })
 
@@ -20,7 +21,7 @@ describe("resolveCompatibleModelSettings", () => {
   test("uses model metadata first for variant support", () => {
     const result = resolveCompatibleModelSettings({
       providerID: "anthropic",
-      modelID: "claude-opus-4-6",
+      modelID: "claude-opus-4-7",
       desired: { variant: "max" },
       capabilities: { variants: ["low", "medium", "high"] },
     })
@@ -42,7 +43,7 @@ describe("resolveCompatibleModelSettings", () => {
   test("prefers metadata over family heuristics even when family would allow a higher level", () => {
     const result = resolveCompatibleModelSettings({
       providerID: "anthropic",
-      modelID: "claude-opus-4-6",
+      modelID: "claude-opus-4-7",
       desired: { variant: "max" },
       capabilities: { variants: ["low", "medium"] },
     })
@@ -467,6 +468,48 @@ describe("resolveCompatibleModelSettings", () => {
     ])
   })
 
+  test("drops thinking for MiniMax M2.7 capabilities resolved from heuristics", () => {
+    // given
+    const capabilities = getModelCapabilities({
+      providerID: "volcengine",
+      modelID: "minimax-m2.7",
+    })
+
+    // when
+    const result = resolveCompatibleModelSettings({
+      providerID: "volcengine",
+      modelID: "minimax-m2.7",
+      desired: { thinking: { type: "enabled", budgetTokens: 4096 } },
+      capabilities,
+    })
+
+    // then
+    expect(result.thinking).toBeUndefined()
+    expect(result.changes[0]?.field).toBe("thinking")
+    expect(result.changes[0]?.reason).toBe("unsupported-by-model-metadata")
+  })
+
+  test("drops thinking for non-thinking Kimi K2.6 capabilities resolved from heuristics", () => {
+    // given
+    const capabilities = getModelCapabilities({
+      providerID: "volcengine",
+      modelID: "kimi-k2.6",
+    })
+
+    // when
+    const result = resolveCompatibleModelSettings({
+      providerID: "volcengine",
+      modelID: "kimi-k2.6",
+      desired: { thinking: { type: "enabled", budgetTokens: 4096 } },
+      capabilities,
+    })
+
+    // then
+    expect(result.thinking).toBeUndefined()
+    expect(result.changes[0]?.field).toBe("thinking")
+    expect(result.changes[0]?.reason).toBe("unsupported-by-model-metadata")
+  })
+
   test("clamps maxTokens to the model output limit", () => {
     const result = resolveCompatibleModelSettings({
       providerID: "openai",
@@ -514,7 +557,7 @@ describe("resolveCompatibleModelSettings", () => {
   test("no-op when desired settings are empty", () => {
     const result = resolveCompatibleModelSettings({
       providerID: "anthropic",
-      modelID: "claude-opus-4-6",
+      modelID: "claude-opus-4-7",
       desired: {},
     })
 

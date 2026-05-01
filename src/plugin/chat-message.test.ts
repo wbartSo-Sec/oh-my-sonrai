@@ -709,7 +709,7 @@ describe("createChatMessageHandler - TUI variant passthrough", () => {
       shouldOverride: false,
       pluginConfig: {
         agents: {
-          sisyphus: { model: "anthropic/claude-opus-4-6" },
+          sisyphus: { model: "anthropic/claude-opus-4-7" },
         },
       },
     })
@@ -733,7 +733,7 @@ describe("createChatMessageHandler - TUI variant passthrough", () => {
       shouldOverride: false,
       pluginConfig: {
         agents: {
-          prometheus: { model: "anthropic/claude-opus-4-6" },
+          prometheus: { model: "anthropic/claude-opus-4-7" },
         },
       },
     })
@@ -753,7 +753,7 @@ describe("createChatMessageHandler - TUI variant passthrough", () => {
   test("respects a mid-conversation model switch instead of reusing the previous stored model", async () => {
     //#given
     setMainSession("test-session")
-    setSessionModel("test-session", { providerID: "anthropic", modelID: "claude-opus-4-6" })
+    setSessionModel("test-session", { providerID: "anthropic", modelID: "claude-opus-4-7" })
     const args = createMockHandlerArgs({ shouldOverride: false })
     const handler = createChatMessageHandler(args)
     const nextModel = { providerID: "openai", modelID: "gpt-5.4" }
@@ -766,5 +766,19 @@ describe("createChatMessageHandler - TUI variant passthrough", () => {
     //#then
     expect(output.message["model"]).toBeUndefined()
     expect(getSessionModel("test-session")).toEqual(nextModel)
+  })
+
+  test("strips legacy ZWSP-prefixed agent names from persisted prompt body session state (GH-3259)", async () => {
+    //#given - persisted prompt body from v3.14.0-v3.16.0 may contain ZWSP-prefixed agent
+    const args = createMockHandlerArgs()
+    const handler = createChatMessageHandler(args)
+    const input = createMockInput("\u200B\u200BHephaestus - Deep Agent")
+    const output = createMockOutput()
+
+    //#when
+    await handler(input, output)
+
+    //#then
+    expect(getSessionAgent("test-session")).toBe("Hephaestus - Deep Agent")
   })
 })

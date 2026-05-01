@@ -249,6 +249,33 @@ describe("todo-continuation-enforcer", () => {
     _resetForTesting()
   })
 
+  test("given the first idle event, starts the prune interval lazily", async () => {
+    // given
+    const originalSetInterval = globalThis.setInterval
+    let setIntervalCalls = 0
+    globalThis.setInterval = ((callback: TimerCallback, delay?: number, ...args: any[]) => {
+      setIntervalCalls += 1
+      return originalSetInterval(callback, delay, ...args)
+    }) as typeof setInterval
+
+    try {
+      const sessionID = "main-lazy-prune"
+      setMainSession(sessionID)
+      const hook = createTodoContinuationEnforcer(createMockPluginInput(), {
+        backgroundManager: createMockBackgroundManager(true),
+      })
+
+      // when
+      await hook.handler({ event: { type: "session.idle", properties: { sessionID } } })
+      await hook.handler({ event: { type: "session.idle", properties: { sessionID } } })
+
+      // then
+      expect(setIntervalCalls).toBe(1)
+    } finally {
+      globalThis.setInterval = originalSetInterval
+    }
+  })
+
   test("should inject continuation when idle with incomplete todos", async () => {
     fakeTimers.restore()
     // given - main session with incomplete todos
@@ -1026,7 +1053,6 @@ describe("todo-continuation-enforcer", () => {
   })
 
   test("should show countdown toast updates", async () => {
-    fakeTimers.restore()
     // given - session with incomplete todos
     const sessionID = "main-toast"
     setMainSession(sessionID)
@@ -1039,7 +1065,7 @@ describe("todo-continuation-enforcer", () => {
     })
 
     // then - multiple toast updates during countdown (2s countdown = 2 toasts: "2s" and "1s")
-    await wait(2500)
+    await fakeTimers.advanceBy(1500)
     expect(toastCalls.length).toBeGreaterThanOrEqual(2)
     expect(toastCalls[0].message).toContain("2s")
   }, { timeout: 15000 })

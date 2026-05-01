@@ -378,7 +378,7 @@ describe("background-agent spawner fallback model promotion", () => {
 
     //#when
     await startTask(
-      { task, input },
+      { task, input, attemptID: "att_test123" },
       {
         client,
         directory: "/tmp/test",
@@ -575,5 +575,140 @@ describe("background-agent spawner fallback model promotion", () => {
     //#then
     expect(promptCalls).toHaveLength(1)
     expect(promptCalls[0]?.body?.agent).toBe("sisyphus-junior")
+  })
+
+  test("strips legacy ZWSP-prefixed agent names from persisted background spawn prompt body (GH-3259)", async () => {
+    //#given - persisted spawn input from v3.14.0-v3.16.0 with ZWSP prefix on agent
+    const promptCalls: Array<{ body?: { agent?: string } }> = []
+
+    const client = {
+      session: {
+        get: async () => ({ data: { directory: "/parent/dir" } }),
+        create: async () => ({ data: { id: "ses_child_legacy_zwsp" } }),
+        promptAsync: async (args?: { body?: { agent?: string } }) => {
+          promptCalls.push(args ?? {})
+          return {}
+        },
+      },
+    }
+
+    const task = createTask({
+      description: "Legacy ZWSP",
+      prompt: "Do work",
+      agent: "\u200B\u200BHephaestus - Deep Agent",
+      parentSessionID: "ses_parent",
+      parentMessageID: "msg_parent",
+    })
+
+    const item = {
+      task,
+      input: {
+        description: task.description,
+        prompt: task.prompt,
+        agent: task.agent,
+        parentSessionID: task.parentSessionID,
+        parentMessageID: task.parentMessageID,
+        parentModel: task.parentModel,
+        parentAgent: task.parentAgent,
+        model: task.model,
+      },
+    }
+
+    const ctx = {
+      client,
+      directory: "/fallback",
+      concurrencyManager: { release: () => {} },
+      tmuxEnabled: false,
+      onTaskError: () => {},
+    }
+
+    //#when
+    await startTask(item as any, ctx as any)
+    await new Promise((resolve) => setTimeout(resolve, 0))
+
+    //#then
+    expect(promptCalls).toHaveLength(1)
+    expect(promptCalls[0]?.body?.agent).toBe("Hephaestus - Deep Agent")
+  })
+})
+
+describe("background-agent spawner tmux callback ordering", () => {
+  test("fires promptAsync before tmux callback resolves (no blocking)", async () => {
+    //#given
+    const events: string[] = []
+    let resolveTmuxCallback: () => void = () => {}
+    const tmuxCallbackPromise = new Promise<void>((resolve) => {
+      resolveTmuxCallback = resolve
+    })
+
+    const client = {
+      session: {
+        get: async () => ({ data: { directory: "/tmp/test" } }),
+        create: async () => {
+          events.push("session.create")
+          return { data: { id: "ses_blocking_tmux" } }
+        },
+        promptAsync: async () => {
+          events.push("promptAsync")
+          return { data: {} }
+        },
+      },
+    } as any
+
+    const onSubagentSessionCreated = mock(async () => {
+      events.push("tmux.callback.start")
+      await tmuxCallbackPromise
+      events.push("tmux.callback.end")
+    })
+
+    const task = createTask({
+      description: "Blocking tmux test",
+      prompt: "Do work",
+      agent: "general",
+      parentSessionID: "ses_parent",
+      parentMessageID: "msg_parent",
+    })
+
+    const item = {
+      task,
+      input: {
+        description: task.description,
+        prompt: task.prompt,
+        agent: task.agent,
+        parentSessionID: task.parentSessionID,
+        parentMessageID: task.parentMessageID,
+      },
+    }
+
+    const ctx = {
+      client,
+      directory: "/tmp/test",
+      concurrencyManager: { release: () => {} },
+      tmuxEnabled: true,
+      onSubagentSessionCreated,
+      onTaskError: () => {},
+    }
+
+    const originalTmux = process.env.TMUX
+    process.env.TMUX = "/tmp/fake-tmux-socket"
+
+    try {
+      //#when
+      await startTask(item as any, ctx as any)
+      await new Promise((resolve) => setTimeout(resolve, 20))
+
+      //#then
+      expect(events).toContain("session.create")
+      expect(events).toContain("promptAsync")
+      expect(events).toContain("tmux.callback.start")
+      const promptIdx = events.indexOf("promptAsync")
+      const tmuxStartIdx = events.indexOf("tmux.callback.start")
+      expect(promptIdx < tmuxStartIdx).toBe(true)
+      expect(events).not.toContain("tmux.callback.end")
+    } finally {
+      resolveTmuxCallback()
+      if (originalTmux === undefined) delete process.env.TMUX
+      else process.env.TMUX = originalTmux
+    }
   })
 })

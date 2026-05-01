@@ -1,4 +1,5 @@
 import type { OhMyOpenCodeConfig } from "../config";
+import type { PluginInput } from "@opencode-ai/plugin";
 import type { PluginContext } from "./types";
 
 import {
@@ -15,6 +16,7 @@ import {
   clearSessionFallbackChain,
   setSessionFallbackChain,
   setPendingModelFallback,
+  type ModelFallbackHook,
 } from "../hooks/model-fallback/hook";
 import { getRawFallbackModels } from "../hooks/runtime-fallback/fallback-models";
 import {
@@ -25,6 +27,7 @@ import {
 import { resetMessageCursor } from "../shared";
 import { getAgentConfigKey } from "../shared/agent-display-names";
 import { readConnectedProvidersCache } from "../shared/connected-providers-cache";
+import { invalidateContextWindowUsageCache } from "../shared/dynamic-truncator";
 import { log } from "../shared/logger";
 import { shouldRetryError } from "../shared/model-error-classifier";
 import { buildFallbackChainFromModels } from "../shared/fallback-chain-from-models";
@@ -62,18 +65,17 @@ function extractErrorName(error: unknown): string | undefined {
   return undefined;
 }
 
-function extractErrorMessage(error: unknown): string {
+export function extractErrorMessage(error: unknown): string {
   if (!error) return "";
   if (typeof error === "string") return error;
-  if (error instanceof Error) return error.message;
 
   if (isRecord(error)) {
     const candidates: unknown[] = [
-      error,
       error.data,
-      error.error,
       isRecord(error.data) ? error.data.error : undefined,
+      error.error,
       error.cause,
+      error,
     ];
 
     for (const candidate of candidates) {
@@ -82,6 +84,8 @@ function extractErrorMessage(error: unknown): string {
       }
     }
   }
+
+  if (error instanceof Error) return error.message;
 
   try {
     return JSON.stringify(error);
@@ -111,6 +115,7 @@ function extractProviderModelFromErrorMessage(message: string): { providerID?: s
   return {};
 }
 function applyUserConfiguredFallbackChain(
+  modelFallback: Pick<ModelFallbackHook, "setSessionFallbackChain"> | null | undefined,
   sessionID: string,
   agentName: string,
   currentProviderID: string,
@@ -123,7 +128,9 @@ function applyUserConfiguredFallbackChain(
   const fallbackChain = buildFallbackChainFromModels(rawFallbackModels, currentProviderID);
 
   if (fallbackChain && fallbackChain.length > 0) {
-    setSessionFallbackChain(sessionID, fallbackChain);
+    if (modelFallback) {
+      setSessionFallbackChain(modelFallback, sessionID, fallbackChain);
+    }
   }
 }
 
@@ -156,8 +163,7 @@ export function createEventHandler(args: {
           body: { parts: Array<{ type: "text"; text: string }> };
           query: { directory: string };
         }) => Promise<unknown>;
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        summarize: (...args: any[]) => Promise<unknown>;
+        summarize: (...args: unknown[]) => Promise<unknown>;
       };
     };
   };
@@ -170,6 +176,7 @@ export function createEventHandler(args: {
 
   const isModelFallbackEnabled =
     hooks.modelFallback !== null && hooks.modelFallback !== undefined;
+  const modelFallback = hooks.modelFallback;
 
   // Avoid triggering multiple abort+continue cycles for the same failing assistant message.
   const lastHandledModelErrorMessageID = new Map<string, string>();
@@ -408,8 +415,10 @@ export function createEventHandler(args: {
         lastHandledModelErrorMessageID.delete(sessionInfo.id);
         lastHandledRetryStatusKey.delete(sessionInfo.id);
         lastKnownModelBySession.delete(sessionInfo.id);
-        clearPendingModelFallback(sessionInfo.id);
-        clearSessionFallbackChain(sessionInfo.id);
+        if (modelFallback) {
+          clearPendingModelFallback(modelFallback, sessionInfo.id);
+          clearSessionFallbackChain(modelFallback, sessionInfo.id);
+        }
         resetMessageCursor(sessionInfo.id);
         clearBackgroundOutputConsumptionsForParentSession(sessionInfo.id);
         clearBackgroundOutputConsumptionsForTaskSession(sessionInfo.id);
@@ -468,6 +477,9 @@ export function createEventHandler(args: {
       const sessionID = info?.sessionID as string | undefined;
       const agent = info?.agent as string | undefined;
       const role = info?.role as string | undefined;
+      if (sessionID && info?.finish === true) {
+        invalidateContextWindowUsageCache(pluginContext as PluginInput, sessionID);
+      }
       if (sessionID && role === "user") {
         const isCompactionMessage = agent ? isCompactionAgent(agent) : false;
         if (agent && !isCompactionMessage) {
@@ -515,11 +527,13 @@ export function createEventHandler(args: {
                   sessionID,
                   info?.providerID as string | undefined,
                 );
-                const rawModel = (info?.modelID as string | undefined) ?? "claude-opus-4-6";
+                const rawModel = (info?.modelID as string | undefined) ?? "claude-opus-4-7";
                 const currentModel = normalizeFallbackModelID(rawModel);
-                applyUserConfiguredFallbackChain(sessionID, agentName, currentProvider, args.pluginConfig);
+                applyUserConfiguredFallbackChain(modelFallback, sessionID, agentName, currentProvider, args.pluginConfig);
 
-                const setFallback = setPendingModelFallback(sessionID, agentName, currentProvider, currentModel);
+                const setFallback = modelFallback
+                  ? setPendingModelFallback(modelFallback, sessionID, agentName, currentProvider, currentModel)
+                  : false;
 
                 if (
                   setFallback &&
@@ -578,11 +592,13 @@ export function createEventHandler(args: {
               const parsed = extractProviderModelFromErrorMessage(retryMessage);
               const lastKnown = lastKnownModelBySession.get(sessionID);
               const currentProvider = resolveFallbackProviderID(sessionID, parsed.providerID);
-              let currentModel = parsed.modelID ?? lastKnown?.modelID ?? "claude-opus-4-6";
+              let currentModel = parsed.modelID ?? lastKnown?.modelID ?? "claude-opus-4-7";
               currentModel = normalizeFallbackModelID(currentModel);
-              applyUserConfiguredFallbackChain(sessionID, agentName, currentProvider, args.pluginConfig);
+              applyUserConfiguredFallbackChain(modelFallback, sessionID, agentName, currentProvider, args.pluginConfig);
 
-              const setFallback = setPendingModelFallback(sessionID, agentName, currentProvider, currentModel);
+              const setFallback = modelFallback
+                ? setPendingModelFallback(modelFallback, sessionID, agentName, currentProvider, currentModel)
+                : false;
 
               if (
                 setFallback &&
@@ -664,11 +680,13 @@ export function createEventHandler(args: {
               sessionID,
               (props?.providerID as string | undefined) || parsed.providerID,
             );
-            let currentModel = (props?.modelID as string) || parsed.modelID || "claude-opus-4-6";
+            let currentModel = (props?.modelID as string) || parsed.modelID || "claude-opus-4-7";
             currentModel = normalizeFallbackModelID(currentModel);
-            applyUserConfiguredFallbackChain(sessionID, agentName, currentProvider, args.pluginConfig);
+            applyUserConfiguredFallbackChain(modelFallback, sessionID, agentName, currentProvider, args.pluginConfig);
 
-            const setFallback = setPendingModelFallback(sessionID, agentName, currentProvider, currentModel);
+            const setFallback = modelFallback
+              ? setPendingModelFallback(modelFallback, sessionID, agentName, currentProvider, currentModel)
+              : false;
 
             if (
               setFallback &&

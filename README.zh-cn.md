@@ -142,7 +142,7 @@ Read this and tell me why it's not just another boilerplate: https://raw.githubu
 
 只需以下订阅之一，ultrawork 就能顺畅工作（本项目与它们没有任何关联，纯属个人推荐）：
 - [ChatGPT 订阅 ($20)](https://chatgpt.com/)
-- [Kimi Code 订阅 ($0.99) (*仅限本月*)](https://www.kimi.com/membership/pricing?track_id=5cdeca93-66f0-4d35-aabb-b6df8fcea328)
+- [Kimi Code 订阅 ($19)](https://www.kimi.com/code)
 - [GLM Coding 套餐 ($10)](https://z.ai/subscribe)
 - 如果你能使用按 token 计费的方式，用 kimi 和 gemini 模型花不了多少钱。
 
@@ -171,11 +171,11 @@ Read this and tell me why it's not just another boilerplate: https://raw.githubu
 <td align="center"><img src=".github/assets/hephaestus.png" height="300" /></td>
 </tr></table>
 
-**Sisyphus** (`claude-opus-4-6` / **`kimi-k2.5`** / **`glm-5`**) 是你的主指挥官。他负责制定计划、分配任务给专家团队，并以极其激进的并行策略推动任务直至完成。他从不半途而废。
+**Sisyphus** (`claude-opus-4-7` / **`kimi-k2.5`** / **`glm-5`**) 是你的主指挥官。他负责制定计划、分配任务给专家团队，并以极其激进的并行策略推动任务直至完成。他从不半途而废。
 
 **Hephaestus** (`gpt-5.4`) 是你的自主深度工作者。你只需要给他目标，不要给他具体做法。他会自动探索代码库模式，从头到尾独立执行任务，绝不会中途要你当保姆。*名副其实的正牌工匠。*
 
-**Prometheus** (`claude-opus-4-6` / **`kimi-k2.5`** / **`glm-5`**) 是你的战略规划师。他通过访谈模式，在动一行代码之前，先通过提问确定范围并构建详尽的执行计划。
+**Prometheus** (`claude-opus-4-7` / **`kimi-k2.5`** / **`glm-5`**) 是你的战略规划师。他通过访谈模式，在动一行代码之前，先通过提问确定范围并构建详尽的执行计划。
 
 每一个 Agent 都针对其底层模型的特点进行了专门调优。你无需手动来回切换模型。[阅读背景设定了解更多 →](docs/guide/overview.md)
 

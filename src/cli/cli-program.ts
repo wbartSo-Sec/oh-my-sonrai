@@ -46,7 +46,7 @@ Model Providers (Priority: Native > Copilot > OpenCode Zen > Z.ai > Kimi > Verce
   OpenAI        Native openai/ models (GPT-5.4 for Oracle)
   Gemini        Native google/ models (Gemini 3.1 Pro, Flash)
   Copilot       github-copilot/ models (fallback)
-  OpenCode Zen  opencode/ models (opencode/claude-opus-4-6, etc.)
+  OpenCode Zen  opencode/ models (opencode/claude-opus-4-7, etc.)
   Z.ai          zai-coding-plan/glm-5 (visual-engineering fallback)
   Kimi          kimi-for-coding/k2p5 (Sisyphus/Prometheus fallback)
   Vercel        vercel/ models (universal proxy, always last fallback)
@@ -94,7 +94,7 @@ Examples:
   $ bunx oh-my-opencode run --on-complete "notify-send Done" "Fix the bug"
   $ bunx oh-my-opencode run --session-id ses_abc123 "Continue the work"
   $ bunx oh-my-opencode run --model anthropic/claude-sonnet-4 "Fix the bug"
-  $ bunx oh-my-opencode run --agent Sisyphus --model openai/gpt-5.4 "Implement feature X"
+  $ bunx oh-my-opencode run --agent Sisyphus --model openai/gpt-5.5 "Implement feature X"
 
 Agent resolution order:
   1) --agent flag
