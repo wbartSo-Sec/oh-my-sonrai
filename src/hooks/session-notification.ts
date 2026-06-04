@@ -4,9 +4,10 @@ import { buildReadyNotificationContent } from "./session-notification-content"
 import { type Platform } from "./session-notification-sender"
 import * as sessionNotificationSender from "./session-notification-sender"
 import { getEventToolName, getQuestionText, getSessionID } from "./session-notification-event-properties"
-import { hasIncompleteTodos } from "./session-todo-status"
+import { hasPendingSessionWork } from "./session-todo-status"
 import { createIdleNotificationScheduler } from "./session-notification-scheduler"
 import { createSessionNotificationInit } from "./session-notification-init"
+import { resolveSessionEventID } from "../shared/event-session-id"
 
 interface SessionNotificationConfig {
   title?: string
@@ -48,7 +49,7 @@ export function createSessionNotification(ctx: PluginInput, config: SessionNotif
   const scheduler = createIdleNotificationScheduler({
     ctx,
     config: mergedConfig,
-    hasIncompleteTodos,
+    hasIncompleteTodos: hasPendingSessionWork,
     send: async (hookCtx, sessionID) => {
       const platform = ensureNotificationPlatform()
       if (typeof hookCtx.client.session.get !== "function" && typeof hookCtx.client.session.messages !== "function") {
@@ -98,8 +99,7 @@ export function createSessionNotification(ctx: PluginInput, config: SessionNotif
     const props = event.properties as Record<string, unknown> | undefined
 
     if (event.type === "session.created") {
-      const info = props?.info as Record<string, unknown> | undefined
-      const sessionID = info?.id as string | undefined
+      const sessionID = resolveSessionEventID(props)
       if (sessionID) scheduler.markSessionActivity(sessionID)
       return
     }
@@ -116,7 +116,11 @@ export function createSessionNotification(ctx: PluginInput, config: SessionNotif
       return
     }
 
-    if (event.type === "message.updated") {
+    if (
+      event.type === "message.updated" ||
+      event.type === "message.part.updated" ||
+      event.type === "message.part.delta"
+    ) {
       const info = props?.info as Record<string, unknown> | undefined
       const sessionID = getSessionID({ ...props, info })
       if (sessionID) scheduler.markSessionActivity(sessionID)
@@ -165,8 +169,8 @@ export function createSessionNotification(ctx: PluginInput, config: SessionNotif
     }
 
     if (event.type === "session.deleted") {
-      const sessionInfo = props?.info as { id?: string } | undefined
-      if (sessionInfo?.id) scheduler.deleteSession(sessionInfo.id)
+      const sessionID = resolveSessionEventID(props)
+      if (sessionID) scheduler.deleteSession(sessionID)
     }
   }
 }

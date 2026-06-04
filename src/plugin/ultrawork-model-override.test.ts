@@ -2,6 +2,7 @@ import { describe, expect, test, beforeEach, afterEach, spyOn } from "bun:test"
 import * as sharedModule from "../shared"
 import * as dbOverrideModule from "./ultrawork-db-model-override"
 import * as sessionStateModule from "../features/claude-code-session-state"
+import { unsafeTestValue } from "../../test-support/unsafe-test-value"
 
 let resolveUltraworkOverride: (typeof import("./ultrawork-model-override"))["resolveUltraworkOverride"]
 let detectUltrawork: (typeof import("./ultrawork-model-override"))["detectUltrawork"]
@@ -70,11 +71,11 @@ describe("resolveUltraworkOverride", () => {
   }
 
   function createConfig(agentName: string, ultrawork: { model?: string; variant?: string }) {
-    return {
+    return unsafeTestValue<Parameters<typeof resolveUltraworkOverride>[0]>({
       agents: {
         [agentName]: { ultrawork },
       },
-    } as unknown as Parameters<typeof resolveUltraworkOverride>[0]
+    })
   }
 
   test("should resolve override when ultrawork keyword detected", () => {
@@ -139,9 +140,9 @@ describe("resolveUltraworkOverride", () => {
 
   test("should return null when agent has no ultrawork config", () => {
     //#given
-    const config = {
+    const config = unsafeTestValue<Parameters<typeof resolveUltraworkOverride>[0]>({
       agents: { sisyphus: { model: "anthropic/claude-sonnet-4-6" } },
-    } as unknown as Parameters<typeof resolveUltraworkOverride>[0]
+    })
     const output = createOutput("ultrawork do something")
 
     //#when
@@ -165,14 +166,14 @@ describe("resolveUltraworkOverride", () => {
 
   test("should handle model string with multiple slashes", () => {
     //#given
-    const config = createConfig("sisyphus", { model: "openai/gpt-5.3/codex" })
+    const config = createConfig("sisyphus", { model: "openai/gpt-5.5/codex" })
     const output = createOutput("ultrawork do something")
 
     //#when
     const result = resolveUltraworkOverride(config, "sisyphus", output)
 
     //#then
-    expect(result).toEqual({ providerID: "openai", modelID: "gpt-5.3/codex", variant: undefined })
+    expect(result).toEqual({ providerID: "openai", modelID: "gpt-5.5/codex", variant: undefined })
   })
 
   test("should return null when model string has no slash", () => {
@@ -278,11 +279,11 @@ describe("applyUltraworkModelOverrideOnMessage", () => {
   }
 
   function createConfig(agentName: string, ultrawork: { model?: string; variant?: string }) {
-    return {
+    return unsafeTestValue<Parameters<typeof applyUltraworkModelOverrideOnMessage>[0]>({
       agents: {
         [agentName]: { ultrawork },
       },
-    } as unknown as Parameters<typeof applyUltraworkModelOverrideOnMessage>[0]
+    })
   }
 
   test("should schedule deferred DB override without variant when SDK unavailable", () => {

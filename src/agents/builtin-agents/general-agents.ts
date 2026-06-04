@@ -25,6 +25,7 @@ export function collectPendingBuiltinAgents(input: {
   availableModels: Set<string>
   isFirstRunNoCache: boolean
   disabledSkills?: Set<string>
+  teamModeEnabled?: boolean
   useTaskSystem?: boolean
   disableOmoEnv?: boolean
 }): { pendingAgentConfigs: Map<string, AgentConfig>; availableAgents: AvailableAgent[] } {
@@ -40,8 +41,9 @@ export function collectPendingBuiltinAgents(input: {
     browserProvider,
     uiSelectedModel,
     availableModels,
-    isFirstRunNoCache,
+    isFirstRunNoCache: _isFirstRunNoCache,
     disabledSkills,
+    teamModeEnabled,
     disableOmoEnv = false,
   } = input
 
@@ -64,6 +66,10 @@ export function collectPendingBuiltinAgents(input: {
     // Check if agent requires a specific model
     if (requirement?.requiresModel && availableModels) {
       if (!isModelAvailable(requirement.requiresModel, availableModels)) {
+        log("[agent-registration] Agent skipped: required model not available", {
+          agent: agentName,
+          requiredModel: requirement.requiresModel,
+        })
         continue
       }
     }
@@ -90,7 +96,13 @@ export function collectPendingBuiltinAgents(input: {
         resolution = getFirstFallbackModel(requirement)
       }
     }
-    if (!resolution) continue
+    if (!resolution) {
+      log("[agent-registration] Agent skipped: model resolution returned no result", {
+        agent: agentName,
+        configuredModel: override?.model,
+      })
+      continue
+    }
     const { model, variant: resolvedVariant } = resolution
 
     let config = buildAgent(source, model, mergedCategories)
@@ -105,7 +117,7 @@ export function collectPendingBuiltinAgents(input: {
     }
 
     config = applyOverrides(config, override, mergedCategories, directory)
-    config = resolveAgentSkills(config, { gitMasterConfig, browserProvider, disabledSkills })
+    config = resolveAgentSkills(config, { gitMasterConfig, browserProvider, disabledSkills, teamModeEnabled })
 
     // Store for later - will be added after sisyphus and hephaestus
     pendingAgentConfigs.set(name, config)

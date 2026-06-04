@@ -74,9 +74,17 @@ exports[`generateModelConfig single native provider uses Claude models when only
     "explore": {
       "model": "anthropic/claude-haiku-4-5",
     },
+    "librarian": {
+      "model": "anthropic/claude-haiku-4-5",
+    },
     "metis": {
-      "model": "anthropic/claude-opus-4-7",
-      "variant": "max",
+      "fallback_models": [
+        {
+          "model": "anthropic/claude-opus-4-7",
+          "variant": "max",
+        },
+      ],
+      "model": "anthropic/claude-sonnet-4-6",
     },
     "momus": {
       "model": "anthropic/claude-opus-4-7",
@@ -102,6 +110,10 @@ exports[`generateModelConfig single native provider uses Claude models when only
     },
   },
   "categories": {
+    "artistry": {
+      "model": "anthropic/claude-opus-4-7",
+      "variant": "max",
+    },
     "deep": {
       "model": "anthropic/claude-opus-4-7",
       "variant": "max",
@@ -140,9 +152,17 @@ exports[`generateModelConfig single native provider uses Claude models with isMa
     "explore": {
       "model": "anthropic/claude-haiku-4-5",
     },
+    "librarian": {
+      "model": "anthropic/claude-haiku-4-5",
+    },
     "metis": {
-      "model": "anthropic/claude-opus-4-7",
-      "variant": "max",
+      "fallback_models": [
+        {
+          "model": "anthropic/claude-opus-4-7",
+          "variant": "max",
+        },
+      ],
+      "model": "anthropic/claude-sonnet-4-6",
     },
     "momus": {
       "model": "anthropic/claude-opus-4-7",
@@ -168,6 +188,10 @@ exports[`generateModelConfig single native provider uses Claude models with isMa
     },
   },
   "categories": {
+    "artistry": {
+      "model": "anthropic/claude-opus-4-7",
+      "variant": "max",
+    },
     "deep": {
       "model": "anthropic/claude-opus-4-7",
       "variant": "max",
@@ -266,11 +290,11 @@ exports[`generateModelConfig single native provider uses OpenAI models when only
       "variant": "xhigh",
     },
     "unspecified-high": {
-      "model": "openai/gpt-5.3-codex",
+      "model": "openai/gpt-5.5",
       "variant": "medium",
     },
     "unspecified-low": {
-      "model": "openai/gpt-5.3-codex",
+      "model": "openai/gpt-5.5",
       "variant": "medium",
     },
     "visual-engineering": {
@@ -358,7 +382,7 @@ exports[`generateModelConfig single native provider uses OpenAI models with isMa
       "variant": "high",
     },
     "unspecified-low": {
-      "model": "openai/gpt-5.3-codex",
+      "model": "openai/gpt-5.5",
       "variant": "medium",
     },
     "visual-engineering": {
@@ -543,12 +567,15 @@ exports[`generateModelConfig all native providers uses preferred models from fal
     "metis": {
       "fallback_models": [
         {
+          "model": "anthropic/claude-opus-4-7",
+          "variant": "max",
+        },
+        {
           "model": "openai/gpt-5.5",
           "variant": "high",
         },
       ],
-      "model": "anthropic/claude-opus-4-7",
-      "variant": "max",
+      "model": "anthropic/claude-sonnet-4-6",
     },
     "momus": {
       "fallback_models": [
@@ -676,7 +703,7 @@ exports[`generateModelConfig all native providers uses preferred models from fal
     "unspecified-high": {
       "fallback_models": [
         {
-          "model": "openai/gpt-5.3-codex",
+          "model": "openai/gpt-5.5",
           "variant": "medium",
         },
         {
@@ -688,7 +715,7 @@ exports[`generateModelConfig all native providers uses preferred models from fal
     "unspecified-low": {
       "fallback_models": [
         {
-          "model": "openai/gpt-5.3-codex",
+          "model": "openai/gpt-5.5",
           "variant": "medium",
         },
         {
@@ -761,12 +788,15 @@ exports[`generateModelConfig all native providers uses preferred models with isM
     "metis": {
       "fallback_models": [
         {
+          "model": "anthropic/claude-opus-4-7",
+          "variant": "max",
+        },
+        {
           "model": "openai/gpt-5.5",
           "variant": "high",
         },
       ],
-      "model": "anthropic/claude-opus-4-7",
-      "variant": "max",
+      "model": "anthropic/claude-sonnet-4-6",
     },
     "momus": {
       "fallback_models": [
@@ -904,7 +934,7 @@ exports[`generateModelConfig all native providers uses preferred models with isM
     "unspecified-low": {
       "fallback_models": [
         {
-          "model": "openai/gpt-5.3-codex",
+          "model": "openai/gpt-5.5",
           "variant": "medium",
         },
         {
@@ -949,12 +979,7 @@ exports[`generateModelConfig fallback providers uses OpenCode Zen models when on
       "model": "opencode/claude-sonnet-4-6",
     },
     "explore": {
-      "fallback_models": [
-        {
-          "model": "opencode/gpt-5.4-nano",
-        },
-      ],
-      "model": "opencode/claude-haiku-4-5",
+      "model": "opencode/gpt-5-nano",
     },
     "hephaestus": {
       "model": "opencode/gpt-5.5",
@@ -963,12 +988,15 @@ exports[`generateModelConfig fallback providers uses OpenCode Zen models when on
     "metis": {
       "fallback_models": [
         {
+          "model": "opencode/claude-opus-4-7",
+          "variant": "max",
+        },
+        {
           "model": "opencode/gpt-5.5",
           "variant": "high",
         },
       ],
-      "model": "opencode/claude-opus-4-7",
-      "variant": "max",
+      "model": "opencode/claude-sonnet-4-6",
     },
     "momus": {
       "fallback_models": [
@@ -1083,9 +1111,6 @@ exports[`generateModelConfig fallback providers uses OpenCode Zen models when on
     "quick": {
       "fallback_models": [
         {
-          "model": "opencode/claude-haiku-4-5",
-        },
-        {
           "model": "opencode/gemini-3-flash",
         },
         {
@@ -1111,7 +1136,7 @@ exports[`generateModelConfig fallback providers uses OpenCode Zen models when on
     "unspecified-high": {
       "fallback_models": [
         {
-          "model": "opencode/gpt-5.3-codex",
+          "model": "opencode/gpt-5.5",
           "variant": "medium",
         },
         {
@@ -1123,7 +1148,7 @@ exports[`generateModelConfig fallback providers uses OpenCode Zen models when on
     "unspecified-low": {
       "fallback_models": [
         {
-          "model": "opencode/gpt-5.3-codex",
+          "model": "opencode/gpt-5.5",
           "variant": "medium",
         },
         {
@@ -1171,12 +1196,7 @@ exports[`generateModelConfig fallback providers uses OpenCode Zen models with is
       "model": "opencode/claude-sonnet-4-6",
     },
     "explore": {
-      "fallback_models": [
-        {
-          "model": "opencode/gpt-5.4-nano",
-        },
-      ],
-      "model": "opencode/claude-haiku-4-5",
+      "model": "opencode/gpt-5-nano",
     },
     "hephaestus": {
       "model": "opencode/gpt-5.5",
@@ -1185,12 +1205,15 @@ exports[`generateModelConfig fallback providers uses OpenCode Zen models with is
     "metis": {
       "fallback_models": [
         {
+          "model": "opencode/claude-opus-4-7",
+          "variant": "max",
+        },
+        {
           "model": "opencode/gpt-5.5",
           "variant": "high",
         },
       ],
-      "model": "opencode/claude-opus-4-7",
-      "variant": "max",
+      "model": "opencode/claude-sonnet-4-6",
     },
     "momus": {
       "fallback_models": [
@@ -1305,9 +1328,6 @@ exports[`generateModelConfig fallback providers uses OpenCode Zen models with is
     "quick": {
       "fallback_models": [
         {
-          "model": "opencode/claude-haiku-4-5",
-        },
-        {
           "model": "opencode/gemini-3-flash",
         },
         {
@@ -1349,7 +1369,7 @@ exports[`generateModelConfig fallback providers uses OpenCode Zen models with is
     "unspecified-low": {
       "fallback_models": [
         {
-          "model": "opencode/gpt-5.3-codex",
+          "model": "opencode/gpt-5.5",
           "variant": "medium",
         },
         {
@@ -1406,12 +1426,15 @@ exports[`generateModelConfig fallback providers uses GitHub Copilot models when 
     "metis": {
       "fallback_models": [
         {
+          "model": "github-copilot/claude-opus-4.7",
+          "variant": "max",
+        },
+        {
           "model": "github-copilot/gpt-5.5",
           "variant": "high",
         },
       ],
-      "model": "github-copilot/claude-opus-4.7",
-      "variant": "max",
+      "model": "github-copilot/claude-sonnet-4.6",
     },
     "momus": {
       "fallback_models": [
@@ -1587,12 +1610,15 @@ exports[`generateModelConfig fallback providers uses GitHub Copilot models with 
     "metis": {
       "fallback_models": [
         {
+          "model": "github-copilot/claude-opus-4.7",
+          "variant": "max",
+        },
+        {
           "model": "github-copilot/gpt-5.5",
           "variant": "high",
         },
       ],
-      "model": "github-copilot/claude-opus-4.7",
-      "variant": "max",
+      "model": "github-copilot/claude-sonnet-4.6",
     },
     "momus": {
       "fallback_models": [
@@ -1747,128 +1773,6 @@ exports[`generateModelConfig fallback providers uses GitHub Copilot models with 
 }
 `;
 
-exports[`generateModelConfig fallback providers uses ZAI model for librarian when only ZAI is available 1`] = `
-{
-  "$schema": "https://raw.githubusercontent.com/code-yeongyu/oh-my-openagent/dev/assets/oh-my-opencode.schema.json",
-  "agents": {
-    "atlas": {
-      "model": "opencode/gpt-5-nano",
-    },
-    "explore": {
-      "model": "opencode/gpt-5-nano",
-    },
-    "librarian": {
-      "model": "zai-coding-plan/glm-4.7",
-    },
-    "metis": {
-      "model": "opencode/gpt-5-nano",
-    },
-    "momus": {
-      "model": "opencode/gpt-5-nano",
-    },
-    "multimodal-looker": {
-      "model": "zai-coding-plan/glm-4.6v",
-    },
-    "oracle": {
-      "model": "opencode/gpt-5-nano",
-    },
-    "prometheus": {
-      "model": "opencode/gpt-5-nano",
-    },
-    "sisyphus": {
-      "model": "zai-coding-plan/glm-5",
-    },
-    "sisyphus-junior": {
-      "model": "opencode/gpt-5-nano",
-    },
-  },
-  "categories": {
-    "deep": {
-      "model": "opencode/gpt-5-nano",
-    },
-    "quick": {
-      "model": "opencode/gpt-5-nano",
-    },
-    "ultrabrain": {
-      "model": "opencode/gpt-5-nano",
-    },
-    "unspecified-high": {
-      "model": "opencode/gpt-5-nano",
-    },
-    "unspecified-low": {
-      "model": "opencode/gpt-5-nano",
-    },
-    "visual-engineering": {
-      "model": "zai-coding-plan/glm-5",
-    },
-    "writing": {
-      "model": "opencode/gpt-5-nano",
-    },
-  },
-}
-`;
-
-exports[`generateModelConfig fallback providers uses ZAI model for librarian with isMax20 flag 1`] = `
-{
-  "$schema": "https://raw.githubusercontent.com/code-yeongyu/oh-my-openagent/dev/assets/oh-my-opencode.schema.json",
-  "agents": {
-    "atlas": {
-      "model": "opencode/gpt-5-nano",
-    },
-    "explore": {
-      "model": "opencode/gpt-5-nano",
-    },
-    "librarian": {
-      "model": "zai-coding-plan/glm-4.7",
-    },
-    "metis": {
-      "model": "opencode/gpt-5-nano",
-    },
-    "momus": {
-      "model": "opencode/gpt-5-nano",
-    },
-    "multimodal-looker": {
-      "model": "zai-coding-plan/glm-4.6v",
-    },
-    "oracle": {
-      "model": "opencode/gpt-5-nano",
-    },
-    "prometheus": {
-      "model": "opencode/gpt-5-nano",
-    },
-    "sisyphus": {
-      "model": "zai-coding-plan/glm-5",
-    },
-    "sisyphus-junior": {
-      "model": "opencode/gpt-5-nano",
-    },
-  },
-  "categories": {
-    "deep": {
-      "model": "opencode/gpt-5-nano",
-    },
-    "quick": {
-      "model": "opencode/gpt-5-nano",
-    },
-    "ultrabrain": {
-      "model": "opencode/gpt-5-nano",
-    },
-    "unspecified-high": {
-      "model": "zai-coding-plan/glm-5",
-    },
-    "unspecified-low": {
-      "model": "opencode/gpt-5-nano",
-    },
-    "visual-engineering": {
-      "model": "zai-coding-plan/glm-5",
-    },
-    "writing": {
-      "model": "opencode/gpt-5-nano",
-    },
-  },
-}
-`;
-
 exports[`generateModelConfig mixed provider scenarios uses Claude + OpenCode Zen combination 1`] = `
 {
   "$schema": "https://raw.githubusercontent.com/code-yeongyu/oh-my-openagent/dev/assets/oh-my-opencode.schema.json",
@@ -1886,22 +1790,24 @@ exports[`generateModelConfig mixed provider scenarios uses Claude + OpenCode Zen
       "model": "anthropic/claude-sonnet-4-6",
     },
     "explore": {
-      "fallback_models": [
-        {
-          "model": "opencode/claude-haiku-4-5",
-        },
-        {
-          "model": "opencode/gpt-5.4-nano",
-        },
-      ],
       "model": "anthropic/claude-haiku-4-5",
     },
     "hephaestus": {
       "model": "opencode/gpt-5.5",
       "variant": "medium",
     },
+    "librarian": {
+      "model": "anthropic/claude-haiku-4-5",
+    },
     "metis": {
       "fallback_models": [
+        {
+          "model": "opencode/claude-sonnet-4-6",
+        },
+        {
+          "model": "anthropic/claude-opus-4-7",
+          "variant": "max",
+        },
         {
           "model": "opencode/claude-opus-4-7",
           "variant": "max",
@@ -1911,8 +1817,7 @@ exports[`generateModelConfig mixed provider scenarios uses Claude + OpenCode Zen
           "variant": "high",
         },
       ],
-      "model": "anthropic/claude-opus-4-7",
-      "variant": "max",
+      "model": "anthropic/claude-sonnet-4-6",
     },
     "momus": {
       "fallback_models": [
@@ -2057,9 +1962,6 @@ exports[`generateModelConfig mixed provider scenarios uses Claude + OpenCode Zen
           "model": "anthropic/claude-haiku-4-5",
         },
         {
-          "model": "opencode/claude-haiku-4-5",
-        },
-        {
           "model": "opencode/gemini-3-flash",
         },
         {
@@ -2092,7 +1994,7 @@ exports[`generateModelConfig mixed provider scenarios uses Claude + OpenCode Zen
           "model": "opencode/claude-sonnet-4-6",
         },
         {
-          "model": "opencode/gpt-5.3-codex",
+          "model": "opencode/gpt-5.5",
           "variant": "medium",
         },
         {
@@ -2107,7 +2009,7 @@ exports[`generateModelConfig mixed provider scenarios uses Claude + OpenCode Zen
           "model": "opencode/claude-sonnet-4-6",
         },
         {
-          "model": "opencode/gpt-5.3-codex",
+          "model": "opencode/gpt-5.5",
           "variant": "medium",
         },
         {
@@ -2194,6 +2096,10 @@ exports[`generateModelConfig mixed provider scenarios uses OpenAI + Copilot comb
     "metis": {
       "fallback_models": [
         {
+          "model": "github-copilot/claude-opus-4.7",
+          "variant": "max",
+        },
+        {
           "model": "openai/gpt-5.5",
           "variant": "high",
         },
@@ -2202,8 +2108,7 @@ exports[`generateModelConfig mixed provider scenarios uses OpenAI + Copilot comb
           "variant": "high",
         },
       ],
-      "model": "github-copilot/claude-opus-4.7",
-      "variant": "max",
+      "model": "github-copilot/claude-sonnet-4.6",
     },
     "momus": {
       "fallback_models": [
@@ -2364,7 +2269,7 @@ exports[`generateModelConfig mixed provider scenarios uses OpenAI + Copilot comb
     "unspecified-high": {
       "fallback_models": [
         {
-          "model": "openai/gpt-5.3-codex",
+          "model": "openai/gpt-5.5",
           "variant": "medium",
         },
         {
@@ -2376,7 +2281,7 @@ exports[`generateModelConfig mixed provider scenarios uses OpenAI + Copilot comb
     "unspecified-low": {
       "fallback_models": [
         {
-          "model": "openai/gpt-5.3-codex",
+          "model": "openai/gpt-5.5",
           "variant": "medium",
         },
         {
@@ -2407,7 +2312,7 @@ exports[`generateModelConfig mixed provider scenarios uses OpenAI + Copilot comb
 }
 `;
 
-exports[`generateModelConfig mixed provider scenarios uses Claude + ZAI combination (librarian uses ZAI) 1`] = `
+exports[`generateModelConfig mixed provider scenarios uses Claude + ZAI combination with librarian on Claude fallback 1`] = `
 {
   "$schema": "https://raw.githubusercontent.com/code-yeongyu/oh-my-openagent/dev/assets/oh-my-opencode.schema.json",
   "agents": {
@@ -2418,16 +2323,16 @@ exports[`generateModelConfig mixed provider scenarios uses Claude + ZAI combinat
       "model": "anthropic/claude-haiku-4-5",
     },
     "librarian": {
-      "fallback_models": [
-        {
-          "model": "anthropic/claude-haiku-4-5",
-        },
-      ],
-      "model": "zai-coding-plan/glm-4.7",
+      "model": "anthropic/claude-haiku-4-5",
     },
     "metis": {
-      "model": "anthropic/claude-opus-4-7",
-      "variant": "max",
+      "fallback_models": [
+        {
+          "model": "anthropic/claude-opus-4-7",
+          "variant": "max",
+        },
+      ],
+      "model": "anthropic/claude-sonnet-4-6",
     },
     "momus": {
       "model": "anthropic/claude-opus-4-7",
@@ -2458,6 +2363,10 @@ exports[`generateModelConfig mixed provider scenarios uses Claude + ZAI combinat
     },
   },
   "categories": {
+    "artistry": {
+      "model": "anthropic/claude-opus-4-7",
+      "variant": "max",
+    },
     "deep": {
       "model": "anthropic/claude-opus-4-7",
       "variant": "max",
@@ -2501,9 +2410,17 @@ exports[`generateModelConfig mixed provider scenarios uses Gemini + Claude combi
     "explore": {
       "model": "anthropic/claude-haiku-4-5",
     },
+    "librarian": {
+      "model": "anthropic/claude-haiku-4-5",
+    },
     "metis": {
-      "model": "anthropic/claude-opus-4-7",
-      "variant": "max",
+      "fallback_models": [
+        {
+          "model": "anthropic/claude-opus-4-7",
+          "variant": "max",
+        },
+      ],
+      "model": "anthropic/claude-sonnet-4-6",
     },
     "momus": {
       "fallback_models": [
@@ -2643,12 +2560,7 @@ exports[`generateModelConfig mixed provider scenarios uses all fallback provider
       "model": "github-copilot/claude-sonnet-4.6",
     },
     "explore": {
-      "fallback_models": [
-        {
-          "model": "opencode/gpt-5.4-nano",
-        },
-      ],
-      "model": "opencode/claude-haiku-4-5",
+      "model": "opencode/gpt-5-nano",
     },
     "hephaestus": {
       "fallback_models": [
@@ -2660,19 +2572,15 @@ exports[`generateModelConfig mixed provider scenarios uses all fallback provider
       "model": "github-copilot/gpt-5.5",
       "variant": "medium",
     },
-    "librarian": {
-      "fallback_models": [
-        {
-          "model": "opencode/claude-haiku-4-5",
-        },
-        {
-          "model": "opencode/gpt-5.4-nano",
-        },
-      ],
-      "model": "zai-coding-plan/glm-4.7",
-    },
     "metis": {
       "fallback_models": [
+        {
+          "model": "opencode/claude-sonnet-4-6",
+        },
+        {
+          "model": "github-copilot/claude-opus-4.7",
+          "variant": "max",
+        },
         {
           "model": "opencode/claude-opus-4-7",
           "variant": "max",
@@ -2686,8 +2594,7 @@ exports[`generateModelConfig mixed provider scenarios uses all fallback provider
           "variant": "high",
         },
       ],
-      "model": "github-copilot/claude-opus-4.7",
-      "variant": "max",
+      "model": "github-copilot/claude-sonnet-4.6",
     },
     "momus": {
       "fallback_models": [
@@ -2890,9 +2797,6 @@ exports[`generateModelConfig mixed provider scenarios uses all fallback provider
           "model": "github-copilot/claude-haiku-4.5",
         },
         {
-          "model": "opencode/claude-haiku-4-5",
-        },
-        {
           "model": "github-copilot/gemini-3-flash-preview",
         },
         {
@@ -2932,7 +2836,7 @@ exports[`generateModelConfig mixed provider scenarios uses all fallback provider
           "model": "opencode/claude-sonnet-4-6",
         },
         {
-          "model": "opencode/gpt-5.3-codex",
+          "model": "opencode/gpt-5.5",
           "variant": "medium",
         },
         {
@@ -2950,7 +2854,7 @@ exports[`generateModelConfig mixed provider scenarios uses all fallback provider
           "model": "opencode/claude-sonnet-4-6",
         },
         {
-          "model": "opencode/gpt-5.3-codex",
+          "model": "opencode/gpt-5.5",
           "variant": "medium",
         },
         {
@@ -3037,13 +2941,7 @@ exports[`generateModelConfig mixed provider scenarios uses all providers togethe
           "model": "anthropic/claude-haiku-4-5",
         },
         {
-          "model": "opencode/claude-haiku-4-5",
-        },
-        {
           "model": "openai/gpt-5.4-nano",
-        },
-        {
-          "model": "opencode/gpt-5.4-nano",
         },
       ],
       "model": "openai/gpt-5.4-mini-fast",
@@ -3068,19 +2966,23 @@ exports[`generateModelConfig mixed provider scenarios uses all providers togethe
           "model": "anthropic/claude-haiku-4-5",
         },
         {
-          "model": "opencode/claude-haiku-4-5",
-        },
-        {
           "model": "openai/gpt-5.4-nano",
-        },
-        {
-          "model": "opencode/gpt-5.4-nano",
         },
       ],
       "model": "openai/gpt-5.4-mini-fast",
     },
     "metis": {
       "fallback_models": [
+        {
+          "model": "github-copilot/claude-sonnet-4.6",
+        },
+        {
+          "model": "opencode/claude-sonnet-4-6",
+        },
+        {
+          "model": "anthropic/claude-opus-4-7",
+          "variant": "max",
+        },
         {
           "model": "github-copilot/claude-opus-4.7",
           "variant": "max",
@@ -3102,8 +3004,7 @@ exports[`generateModelConfig mixed provider scenarios uses all providers togethe
           "variant": "high",
         },
       ],
-      "model": "anthropic/claude-opus-4-7",
-      "variant": "max",
+      "model": "anthropic/claude-sonnet-4-6",
     },
     "momus": {
       "fallback_models": [
@@ -3392,9 +3293,6 @@ exports[`generateModelConfig mixed provider scenarios uses all providers togethe
           "model": "github-copilot/claude-haiku-4.5",
         },
         {
-          "model": "opencode/claude-haiku-4-5",
-        },
-        {
           "model": "google/gemini-3-flash-preview",
         },
         {
@@ -3452,11 +3350,11 @@ exports[`generateModelConfig mixed provider scenarios uses all providers togethe
           "model": "opencode/claude-sonnet-4-6",
         },
         {
-          "model": "openai/gpt-5.3-codex",
+          "model": "openai/gpt-5.5",
           "variant": "medium",
         },
         {
-          "model": "opencode/gpt-5.3-codex",
+          "model": "opencode/gpt-5.5",
           "variant": "medium",
         },
         {
@@ -3480,11 +3378,11 @@ exports[`generateModelConfig mixed provider scenarios uses all providers togethe
           "model": "opencode/claude-sonnet-4-6",
         },
         {
-          "model": "openai/gpt-5.3-codex",
+          "model": "openai/gpt-5.5",
           "variant": "medium",
         },
         {
-          "model": "opencode/gpt-5.3-codex",
+          "model": "opencode/gpt-5.5",
           "variant": "medium",
         },
         {
@@ -3588,13 +3486,7 @@ exports[`generateModelConfig mixed provider scenarios uses all providers with is
           "model": "anthropic/claude-haiku-4-5",
         },
         {
-          "model": "opencode/claude-haiku-4-5",
-        },
-        {
           "model": "openai/gpt-5.4-nano",
-        },
-        {
-          "model": "opencode/gpt-5.4-nano",
         },
       ],
       "model": "openai/gpt-5.4-mini-fast",
@@ -3619,19 +3511,23 @@ exports[`generateModelConfig mixed provider scenarios uses all providers with is
           "model": "anthropic/claude-haiku-4-5",
         },
         {
-          "model": "opencode/claude-haiku-4-5",
-        },
-        {
           "model": "openai/gpt-5.4-nano",
-        },
-        {
-          "model": "opencode/gpt-5.4-nano",
         },
       ],
       "model": "openai/gpt-5.4-mini-fast",
     },
     "metis": {
       "fallback_models": [
+        {
+          "model": "github-copilot/claude-sonnet-4.6",
+        },
+        {
+          "model": "opencode/claude-sonnet-4-6",
+        },
+        {
+          "model": "anthropic/claude-opus-4-7",
+          "variant": "max",
+        },
         {
           "model": "github-copilot/claude-opus-4.7",
           "variant": "max",
@@ -3653,8 +3549,7 @@ exports[`generateModelConfig mixed provider scenarios uses all providers with is
           "variant": "high",
         },
       ],
-      "model": "anthropic/claude-opus-4-7",
-      "variant": "max",
+      "model": "anthropic/claude-sonnet-4-6",
     },
     "momus": {
       "fallback_models": [
@@ -3943,9 +3838,6 @@ exports[`generateModelConfig mixed provider scenarios uses all providers with is
           "model": "github-copilot/claude-haiku-4.5",
         },
         {
-          "model": "opencode/claude-haiku-4-5",
-        },
-        {
           "model": "google/gemini-3-flash-preview",
         },
         {
@@ -4038,11 +3930,11 @@ exports[`generateModelConfig mixed provider scenarios uses all providers with is
           "model": "opencode/claude-sonnet-4-6",
         },
         {
-          "model": "openai/gpt-5.3-codex",
+          "model": "openai/gpt-5.5",
           "variant": "medium",
         },
         {
-          "model": "opencode/gpt-5.3-codex",
+          "model": "opencode/gpt-5.5",
           "variant": "medium",
         },
         {
@@ -4120,11 +4012,14 @@ exports[`generateModelConfig Vercel AI Gateway provider uses vercel/ model strin
     "atlas": {
       "fallback_models": [
         {
-          "model": "vercel/moonshotai/kimi-k2.5",
+          "model": "vercel/moonshotai/kimi-k2.6",
         },
         {
           "model": "vercel/openai/gpt-5.5",
           "variant": "medium",
+        },
+        {
+          "model": "vercel/minimax/minimax-m3",
         },
         {
           "model": "vercel/minimax/minimax-m2.7",
@@ -4134,6 +4029,9 @@ exports[`generateModelConfig Vercel AI Gateway provider uses vercel/ model strin
     },
     "explore": {
       "fallback_models": [
+        {
+          "model": "vercel/minimax/minimax-m3",
+        },
         {
           "model": "vercel/minimax/minimax-m2.7",
         },
@@ -4153,7 +4051,10 @@ exports[`generateModelConfig Vercel AI Gateway provider uses vercel/ model strin
     "librarian": {
       "fallback_models": [
         {
-          "model": "vercel/minimax/minimax-m2.7-highspeed",
+          "model": "vercel/minimax/minimax-m3",
+        },
+        {
+          "model": "vercel/minimax/minimax-m2.7",
         },
         {
           "model": "vercel/anthropic/claude-haiku-4.5",
@@ -4162,20 +4063,23 @@ exports[`generateModelConfig Vercel AI Gateway provider uses vercel/ model strin
           "model": "vercel/openai/gpt-5.4-nano",
         },
       ],
-      "model": "vercel/minimax/minimax-m2.7",
+      "model": "vercel/minimax/minimax-m2.7-highspeed",
     },
     "metis": {
       "fallback_models": [
+        {
+          "model": "vercel/anthropic/claude-opus-4.7",
+          "variant": "max",
+        },
         {
           "model": "vercel/openai/gpt-5.5",
           "variant": "high",
         },
         {
-          "model": "vercel/zai/glm-5",
+          "model": "vercel/zai/glm-5.1",
         },
       ],
-      "model": "vercel/anthropic/claude-opus-4.7",
-      "variant": "max",
+      "model": "vercel/anthropic/claude-sonnet-4.6",
     },
     "momus": {
       "fallback_models": [
@@ -4188,7 +4092,7 @@ exports[`generateModelConfig Vercel AI Gateway provider uses vercel/ model strin
           "variant": "high",
         },
         {
-          "model": "vercel/zai/glm-5",
+          "model": "vercel/zai/glm-5.1",
         },
       ],
       "model": "vercel/openai/gpt-5.5",
@@ -4197,7 +4101,7 @@ exports[`generateModelConfig Vercel AI Gateway provider uses vercel/ model strin
     "multimodal-looker": {
       "fallback_models": [
         {
-          "model": "vercel/moonshotai/kimi-k2.5",
+          "model": "vercel/moonshotai/kimi-k2.6",
         },
         {
           "model": "vercel/zai/glm-4.6v",
@@ -4220,7 +4124,7 @@ exports[`generateModelConfig Vercel AI Gateway provider uses vercel/ model strin
           "variant": "max",
         },
         {
-          "model": "vercel/zai/glm-5",
+          "model": "vercel/zai/glm-5.1",
         },
       ],
       "model": "vercel/openai/gpt-5.5",
@@ -4233,7 +4137,7 @@ exports[`generateModelConfig Vercel AI Gateway provider uses vercel/ model strin
           "variant": "high",
         },
         {
-          "model": "vercel/zai/glm-5",
+          "model": "vercel/zai/glm-5.1",
         },
         {
           "model": "vercel/google/gemini-3.1-pro-preview",
@@ -4244,6 +4148,9 @@ exports[`generateModelConfig Vercel AI Gateway provider uses vercel/ model strin
     },
     "sisyphus": {
       "fallback_models": [
+        {
+          "model": "vercel/moonshotai/kimi-k2.6",
+        },
         {
           "model": "vercel/moonshotai/kimi-k2.5",
         },
@@ -4261,11 +4168,14 @@ exports[`generateModelConfig Vercel AI Gateway provider uses vercel/ model strin
     "sisyphus-junior": {
       "fallback_models": [
         {
-          "model": "vercel/moonshotai/kimi-k2.5",
+          "model": "vercel/moonshotai/kimi-k2.6",
         },
         {
           "model": "vercel/openai/gpt-5.5",
           "variant": "medium",
+        },
+        {
+          "model": "vercel/minimax/minimax-m3",
         },
         {
           "model": "vercel/minimax/minimax-m2.7",
@@ -4284,6 +4194,12 @@ exports[`generateModelConfig Vercel AI Gateway provider uses vercel/ model strin
         {
           "model": "vercel/openai/gpt-5.5",
         },
+        {
+          "model": "vercel/moonshotai/kimi-k2.6",
+        },
+        {
+          "model": "vercel/zai/glm-5.1",
+        },
       ],
       "model": "vercel/google/gemini-3.1-pro-preview",
       "variant": "high",
@@ -4298,6 +4214,12 @@ exports[`generateModelConfig Vercel AI Gateway provider uses vercel/ model strin
           "model": "vercel/google/gemini-3.1-pro-preview",
           "variant": "high",
         },
+        {
+          "model": "vercel/moonshotai/kimi-k2.6",
+        },
+        {
+          "model": "vercel/zai/glm-5.1",
+        },
       ],
       "model": "vercel/openai/gpt-5.5",
       "variant": "medium",
@@ -4309,6 +4231,9 @@ exports[`generateModelConfig Vercel AI Gateway provider uses vercel/ model strin
         },
         {
           "model": "vercel/google/gemini-3-flash",
+        },
+        {
+          "model": "vercel/minimax/minimax-m3",
         },
         {
           "model": "vercel/minimax/minimax-m2.7",
@@ -4330,7 +4255,7 @@ exports[`generateModelConfig Vercel AI Gateway provider uses vercel/ model strin
           "variant": "max",
         },
         {
-          "model": "vercel/zai/glm-5",
+          "model": "vercel/zai/glm-5.1",
         },
       ],
       "model": "vercel/openai/gpt-5.5",
@@ -4339,14 +4264,17 @@ exports[`generateModelConfig Vercel AI Gateway provider uses vercel/ model strin
     "unspecified-high": {
       "fallback_models": [
         {
-          "model": "vercel/openai/gpt-5.3-codex",
+          "model": "vercel/openai/gpt-5.5",
           "variant": "medium",
         },
         {
-          "model": "vercel/moonshotai/kimi-k2.5",
+          "model": "vercel/moonshotai/kimi-k2.6",
         },
         {
           "model": "vercel/google/gemini-3-flash",
+        },
+        {
+          "model": "vercel/minimax/minimax-m3",
         },
         {
           "model": "vercel/minimax/minimax-m2.7",
@@ -4357,14 +4285,17 @@ exports[`generateModelConfig Vercel AI Gateway provider uses vercel/ model strin
     "unspecified-low": {
       "fallback_models": [
         {
-          "model": "vercel/openai/gpt-5.3-codex",
+          "model": "vercel/openai/gpt-5.5",
           "variant": "medium",
         },
         {
-          "model": "vercel/moonshotai/kimi-k2.5",
+          "model": "vercel/moonshotai/kimi-k2.6",
         },
         {
           "model": "vercel/google/gemini-3-flash",
+        },
+        {
+          "model": "vercel/minimax/minimax-m3",
         },
         {
           "model": "vercel/minimax/minimax-m2.7",
@@ -4381,6 +4312,9 @@ exports[`generateModelConfig Vercel AI Gateway provider uses vercel/ model strin
           "model": "vercel/anthropic/claude-opus-4.7",
           "variant": "max",
         },
+        {
+          "model": "vercel/zai/glm-5.1",
+        },
       ],
       "model": "vercel/google/gemini-3.1-pro-preview",
       "variant": "high",
@@ -4388,10 +4322,13 @@ exports[`generateModelConfig Vercel AI Gateway provider uses vercel/ model strin
     "writing": {
       "fallback_models": [
         {
-          "model": "vercel/moonshotai/kimi-k2.5",
+          "model": "vercel/moonshotai/kimi-k2.6",
         },
         {
           "model": "vercel/anthropic/claude-sonnet-4.6",
+        },
+        {
+          "model": "vercel/minimax/minimax-m3",
         },
         {
           "model": "vercel/minimax/minimax-m2.7",
@@ -4410,11 +4347,14 @@ exports[`generateModelConfig Vercel AI Gateway provider uses vercel/ model strin
     "atlas": {
       "fallback_models": [
         {
-          "model": "vercel/moonshotai/kimi-k2.5",
+          "model": "vercel/moonshotai/kimi-k2.6",
         },
         {
           "model": "vercel/openai/gpt-5.5",
           "variant": "medium",
+        },
+        {
+          "model": "vercel/minimax/minimax-m3",
         },
         {
           "model": "vercel/minimax/minimax-m2.7",
@@ -4424,6 +4364,9 @@ exports[`generateModelConfig Vercel AI Gateway provider uses vercel/ model strin
     },
     "explore": {
       "fallback_models": [
+        {
+          "model": "vercel/minimax/minimax-m3",
+        },
         {
           "model": "vercel/minimax/minimax-m2.7",
         },
@@ -4443,7 +4386,10 @@ exports[`generateModelConfig Vercel AI Gateway provider uses vercel/ model strin
     "librarian": {
       "fallback_models": [
         {
-          "model": "vercel/minimax/minimax-m2.7-highspeed",
+          "model": "vercel/minimax/minimax-m3",
+        },
+        {
+          "model": "vercel/minimax/minimax-m2.7",
         },
         {
           "model": "vercel/anthropic/claude-haiku-4.5",
@@ -4452,20 +4398,23 @@ exports[`generateModelConfig Vercel AI Gateway provider uses vercel/ model strin
           "model": "vercel/openai/gpt-5.4-nano",
         },
       ],
-      "model": "vercel/minimax/minimax-m2.7",
+      "model": "vercel/minimax/minimax-m2.7-highspeed",
     },
     "metis": {
       "fallback_models": [
+        {
+          "model": "vercel/anthropic/claude-opus-4.7",
+          "variant": "max",
+        },
         {
           "model": "vercel/openai/gpt-5.5",
           "variant": "high",
         },
         {
-          "model": "vercel/zai/glm-5",
+          "model": "vercel/zai/glm-5.1",
         },
       ],
-      "model": "vercel/anthropic/claude-opus-4.7",
-      "variant": "max",
+      "model": "vercel/anthropic/claude-sonnet-4.6",
     },
     "momus": {
       "fallback_models": [
@@ -4478,7 +4427,7 @@ exports[`generateModelConfig Vercel AI Gateway provider uses vercel/ model strin
           "variant": "high",
         },
         {
-          "model": "vercel/zai/glm-5",
+          "model": "vercel/zai/glm-5.1",
         },
       ],
       "model": "vercel/openai/gpt-5.5",
@@ -4487,7 +4436,7 @@ exports[`generateModelConfig Vercel AI Gateway provider uses vercel/ model strin
     "multimodal-looker": {
       "fallback_models": [
         {
-          "model": "vercel/moonshotai/kimi-k2.5",
+          "model": "vercel/moonshotai/kimi-k2.6",
         },
         {
           "model": "vercel/zai/glm-4.6v",
@@ -4510,7 +4459,7 @@ exports[`generateModelConfig Vercel AI Gateway provider uses vercel/ model strin
           "variant": "max",
         },
         {
-          "model": "vercel/zai/glm-5",
+          "model": "vercel/zai/glm-5.1",
         },
       ],
       "model": "vercel/openai/gpt-5.5",
@@ -4523,7 +4472,7 @@ exports[`generateModelConfig Vercel AI Gateway provider uses vercel/ model strin
           "variant": "high",
         },
         {
-          "model": "vercel/zai/glm-5",
+          "model": "vercel/zai/glm-5.1",
         },
         {
           "model": "vercel/google/gemini-3.1-pro-preview",
@@ -4534,6 +4483,9 @@ exports[`generateModelConfig Vercel AI Gateway provider uses vercel/ model strin
     },
     "sisyphus": {
       "fallback_models": [
+        {
+          "model": "vercel/moonshotai/kimi-k2.6",
+        },
         {
           "model": "vercel/moonshotai/kimi-k2.5",
         },
@@ -4551,11 +4503,14 @@ exports[`generateModelConfig Vercel AI Gateway provider uses vercel/ model strin
     "sisyphus-junior": {
       "fallback_models": [
         {
-          "model": "vercel/moonshotai/kimi-k2.5",
+          "model": "vercel/moonshotai/kimi-k2.6",
         },
         {
           "model": "vercel/openai/gpt-5.5",
           "variant": "medium",
+        },
+        {
+          "model": "vercel/minimax/minimax-m3",
         },
         {
           "model": "vercel/minimax/minimax-m2.7",
@@ -4574,6 +4529,12 @@ exports[`generateModelConfig Vercel AI Gateway provider uses vercel/ model strin
         {
           "model": "vercel/openai/gpt-5.5",
         },
+        {
+          "model": "vercel/moonshotai/kimi-k2.6",
+        },
+        {
+          "model": "vercel/zai/glm-5.1",
+        },
       ],
       "model": "vercel/google/gemini-3.1-pro-preview",
       "variant": "high",
@@ -4588,6 +4549,12 @@ exports[`generateModelConfig Vercel AI Gateway provider uses vercel/ model strin
           "model": "vercel/google/gemini-3.1-pro-preview",
           "variant": "high",
         },
+        {
+          "model": "vercel/moonshotai/kimi-k2.6",
+        },
+        {
+          "model": "vercel/zai/glm-5.1",
+        },
       ],
       "model": "vercel/openai/gpt-5.5",
       "variant": "medium",
@@ -4599,6 +4566,9 @@ exports[`generateModelConfig Vercel AI Gateway provider uses vercel/ model strin
         },
         {
           "model": "vercel/google/gemini-3-flash",
+        },
+        {
+          "model": "vercel/minimax/minimax-m3",
         },
         {
           "model": "vercel/minimax/minimax-m2.7",
@@ -4620,7 +4590,7 @@ exports[`generateModelConfig Vercel AI Gateway provider uses vercel/ model strin
           "variant": "max",
         },
         {
-          "model": "vercel/zai/glm-5",
+          "model": "vercel/zai/glm-5.1",
         },
       ],
       "model": "vercel/openai/gpt-5.5",
@@ -4636,6 +4606,9 @@ exports[`generateModelConfig Vercel AI Gateway provider uses vercel/ model strin
           "model": "vercel/zai/glm-5",
         },
         {
+          "model": "vercel/zai/glm-5.1",
+        },
+        {
           "model": "vercel/moonshotai/kimi-k2.5",
         },
       ],
@@ -4645,14 +4618,17 @@ exports[`generateModelConfig Vercel AI Gateway provider uses vercel/ model strin
     "unspecified-low": {
       "fallback_models": [
         {
-          "model": "vercel/openai/gpt-5.3-codex",
+          "model": "vercel/openai/gpt-5.5",
           "variant": "medium",
         },
         {
-          "model": "vercel/moonshotai/kimi-k2.5",
+          "model": "vercel/moonshotai/kimi-k2.6",
         },
         {
           "model": "vercel/google/gemini-3-flash",
+        },
+        {
+          "model": "vercel/minimax/minimax-m3",
         },
         {
           "model": "vercel/minimax/minimax-m2.7",
@@ -4669,6 +4645,9 @@ exports[`generateModelConfig Vercel AI Gateway provider uses vercel/ model strin
           "model": "vercel/anthropic/claude-opus-4.7",
           "variant": "max",
         },
+        {
+          "model": "vercel/zai/glm-5.1",
+        },
       ],
       "model": "vercel/google/gemini-3.1-pro-preview",
       "variant": "high",
@@ -4676,10 +4655,13 @@ exports[`generateModelConfig Vercel AI Gateway provider uses vercel/ model strin
     "writing": {
       "fallback_models": [
         {
-          "model": "vercel/moonshotai/kimi-k2.5",
+          "model": "vercel/moonshotai/kimi-k2.6",
         },
         {
           "model": "vercel/anthropic/claude-sonnet-4.6",
+        },
+        {
+          "model": "vercel/minimax/minimax-m3",
         },
         {
           "model": "vercel/minimax/minimax-m2.7",

@@ -1,6 +1,6 @@
 import type { AgentConfig } from "@opencode-ai/sdk";
 import type { AgentMode, AgentPromptMetadata } from "./types";
-import { isGpt5_5Model, isGptModel } from "./types";
+import { buildClaudeThinkingConfig, isGpt5_5Model, isGptModel } from "./types";
 import { createAgentToolRestrictions } from "../shared/permission-compat";
 
 const MODE: AgentMode = "subagent";
@@ -407,6 +407,7 @@ When the consulting agent continues the session with a follow-up question, answe
 If the follow-up contradicts what you recommended and you still believe the original recommendation, say so clearly and explain the disagreement. Your job is not to agree; it is to give the best recommendation.
 `;
 
+
 export function createOracleAgent(model: string): AgentConfig {
   const restrictions = createAgentToolRestrictions([
     "write",
@@ -445,7 +446,7 @@ export function createOracleAgent(model: string): AgentConfig {
 
   return {
     ...base,
-    thinking: { type: "enabled", budgetTokens: 32000 },
+    ...buildClaudeThinkingConfig(model),
   } as AgentConfig;
 }
 createOracleAgent.mode = MODE;

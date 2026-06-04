@@ -25,7 +25,7 @@ import {
   mergeNativeSkills,
 } from "./native-skills"
 
-export function createSkillTool(options: SkillLoadOptions = {}): ToolDefinition {
+export function createSkillTool(options: SkillLoadOptions): ToolDefinition {
   let cachedDescription: string | null = null
 
   const getSkills = async (context?: ToolContext): Promise<LoadedSkill[]> => {
@@ -36,6 +36,8 @@ export function createSkillTool(options: SkillLoadOptions = {}): ToolDefinition 
     const discovered = (await getAllSkills({
       disabledSkills: options?.disabledSkills,
       browserProvider: options?.browserProvider,
+      teamModeEnabled: options?.teamModeEnabled,
+      directory: options.directory,
     })) ?? []
     const allSkills = options.skills ? [...options.skills] : discovered
 
@@ -51,6 +53,8 @@ export function createSkillTool(options: SkillLoadOptions = {}): ToolDefinition 
   }
 
   const getCommands = (): CommandInfo[] => {
+    if (options.commands) return [...options.commands]
+
     return commandDiscovery.discoverCommandsSync(undefined, {
       pluginsEnabled: options.pluginsEnabled,
       enabledPluginsOverride: options.enabledPluginsOverride,
@@ -61,13 +65,20 @@ export function createSkillTool(options: SkillLoadOptions = {}): ToolDefinition 
     if (!force && cachedDescription) return cachedDescription
     const skills = await getSkills()
     const commands = getCommands()
-    const skillInfos = skills.map(loadedSkillToInfo)
-    cachedDescription = formatCombinedDescription(skillInfos, commands)
+    // Exclude agent-restricted skills from the description: they must not be
+    // visible to agents that are not their designated owner.  The execute-time
+    // check already enforces the restriction at call time.
+    const publicSkills = skills.filter((s) => !s.definition.agent)
+    const skillInfos = publicSkills.map(loadedSkillToInfo)
+    cachedDescription = formatCombinedDescription(skillInfos, commands, {
+      includeSkills: options.includeSkillsInDescription,
+    })
     return cachedDescription
   }
 
   if (options.skills !== undefined) {
-    const skillInfos = options.skills.map(loadedSkillToInfo)
+    const publicSkills = options.skills.filter((s) => !s.definition.agent)
+    const skillInfos = publicSkills.map(loadedSkillToInfo)
     const commandsForDescription = options.commands ?? []
     let needsAsyncRefresh = false
 
@@ -83,12 +94,16 @@ export function createSkillTool(options: SkillLoadOptions = {}): ToolDefinition 
       }
     }
 
-    cachedDescription = formatCombinedDescription(skillInfos, commandsForDescription)
+    cachedDescription = formatCombinedDescription(skillInfos, commandsForDescription, {
+      includeSkills: options.includeSkillsInDescription,
+    })
     if (needsAsyncRefresh) {
       void buildDescription(true)
     }
   } else if (options.commands !== undefined) {
-    cachedDescription = formatCombinedDescription([], options.commands)
+    cachedDescription = formatCombinedDescription([], options.commands, {
+      includeSkills: options.includeSkillsInDescription,
+    })
   }
 
   return tool({
@@ -108,7 +123,9 @@ export function createSkillTool(options: SkillLoadOptions = {}): ToolDefinition 
     async execute(args: SkillArgs, ctx?: ToolContext) {
       const skills = await getSkills(ctx)
       const commands = getCommands()
-      cachedDescription = formatCombinedDescription(skills.map(loadedSkillToInfo), commands)
+      cachedDescription = formatCombinedDescription(skills.map(loadedSkillToInfo), commands, {
+        includeSkills: options.includeSkillsInDescription,
+      })
 
       const requestedName = args.name.replace(/^\//, "")
       const matchedSkill = matchSkillByName(skills, requestedName)
@@ -188,4 +205,4 @@ export function createSkillTool(options: SkillLoadOptions = {}): ToolDefinition 
   })
 }
 
-export const skill: ToolDefinition = createSkillTool()
+export const skill: ToolDefinition = createSkillTool({ directory: process.cwd() })

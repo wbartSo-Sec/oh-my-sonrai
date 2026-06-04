@@ -3,6 +3,7 @@ const { describe, test, expect, beforeEach, afterEach, spyOn, mock } = require("
 import { resolveCategoryExecution } from "./category-resolver"
 import type { ExecutorContext } from "./executor-types"
 import * as connectedProvidersCache from "../../shared/connected-providers-cache"
+import { unsafeTestValue } from "../../../test-support/unsafe-test-value"
 
 describe("resolveCategoryExecution", () => {
 	let connectedProvidersSpy: ReturnType<typeof spyOn> | undefined
@@ -26,8 +27,8 @@ describe("resolveCategoryExecution", () => {
 	})
 
 	const createMockExecutorContext = (): ExecutorContext => ({
-		client: {} as any,
-		manager: {} as any,
+		client: unsafeTestValue({}),
+		manager: unsafeTestValue({}),
 		directory: "/tmp/test",
 		userCategories: {},
 		sisyphusJuniorModel: undefined,
@@ -100,7 +101,7 @@ describe("resolveCategoryExecution", () => {
 		executorCtx.userCategories = {
 			deep: {
 				model: "quotio/claude-opus-4-7",
-				fallback_models: ["quotio/kimi-k2.5", "openai/gpt-5.2(high)"],
+				fallback_models: ["quotio/kimi-k2.5", "openai/gpt-5.5(high)"],
 			},
 		}
 
@@ -111,7 +112,7 @@ describe("resolveCategoryExecution", () => {
 		expect(result.error).toBeUndefined()
 		expect(result.fallbackChain).toEqual([
 			{ providers: ["quotio"], model: "kimi-k2.5", variant: undefined },
-			{ providers: ["openai"], model: "gpt-5.2", variant: "high" },
+			{ providers: ["openai"], model: "gpt-5.5", variant: "high" },
 		])
 	})
 

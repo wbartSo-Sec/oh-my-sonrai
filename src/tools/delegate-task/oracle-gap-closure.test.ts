@@ -69,6 +69,7 @@ describe("delegate-task Oracle gap closure", () => {
       client: {
         session: {
           messages: async () => ({ data: [{ info: { agent: "explore", model: MODEL, variant: "max" } }] }),
+          prompt: async () => ({}),
           promptAsync: async () => ({}),
         },
       },
@@ -99,6 +100,7 @@ describe("delegate-task Oracle gap closure", () => {
       client: {
         session: {
           messages: async () => ({ data: [{ info: { agent: "explore", model: MODEL } }] }),
+          prompt: async () => ({}),
           promptAsync: async () => ({}),
         },
       },
@@ -131,7 +133,7 @@ describe("delegate-task Oracle gap closure", () => {
           description: "existing",
           agent: "explore",
           status: "running",
-          sessionID: "ses_bg_category",
+          sessionId: "ses_bg_category",
           category: "deep",
           model: MODEL,
         }),
@@ -163,7 +165,7 @@ describe("delegate-task Oracle gap closure", () => {
           description: "old desc",
           agent: "explore",
           status: "running",
-          sessionID: "ses_bg_title",
+          sessionId: "ses_bg_title",
           model: MODEL,
         }),
       },
@@ -171,7 +173,7 @@ describe("delegate-task Oracle gap closure", () => {
 
     //#then
     const published = ctx.captured.find((item) => item.metadata?.sessionId === "ses_bg_title")
-    expect(published?.title).toBe("Continue: new desc")
+    expect(published?.title).toBe("new desc")
   })
 
   test("#given sync continuation receives system content #when prompt is sent #then system content reaches prompt body", async () => {
@@ -190,6 +192,10 @@ describe("delegate-task Oracle gap closure", () => {
       client: {
         session: {
           messages: async () => ({ data: [{ info: { agent: "explore", model: MODEL } }] }),
+          prompt: async (input: { body?: { system?: string } }) => {
+            promptCalls.push(input)
+            return {}
+          },
           promptAsync: async (input: { body?: { system?: string } }) => {
             promptCalls.push(input)
             return {}
@@ -221,7 +227,7 @@ describe("delegate-task Oracle gap closure", () => {
             description: "existing",
             agent: "explore",
             status: "running",
-            sessionID: "ses_bg_skills",
+            sessionId: "ses_bg_skills",
             model: MODEL,
           }
         },

@@ -6,11 +6,25 @@ import type {
 } from "../agents/dynamic-agent-prompt-builder"
 import type { OhMyOpenCodeConfig } from "../config"
 import { isInteractiveBashEnabled } from "../create-runtime-tmux-config"
+import {
+  createTeamApproveShutdownTool,
+  createTeamCreateTool,
+  createTeamDeleteTool,
+  createTeamRejectShutdownTool,
+  createTeamShutdownRequestTool,
+} from "../features/team-mode/tools/lifecycle"
+import { createTeamSendMessageTool } from "../features/team-mode/tools/messaging"
+import { createTeamListTool, createTeamStatusTool } from "../features/team-mode/tools/query"
+import {
+  createTeamTaskCreateTool,
+  createTeamTaskGetTool,
+  createTeamTaskListTool,
+  createTeamTaskUpdateTool,
+} from "../features/team-mode/tools/tasks"
 import * as openclawRuntimeDispatch from "../openclaw/runtime-dispatch"
 import type { PluginContext, ToolsRecord } from "./types"
 
 import {
-  builtinTools,
   createBackgroundTools,
   createCallOmoAgent,
   createLookAt,
@@ -18,7 +32,6 @@ import {
   createSkillTool,
   createGrepTools,
   createGlobTools,
-  createAstGrepTools,
   createSessionManagerTools,
   createDelegateTask,
   discoverCommandsSync,
@@ -28,6 +41,7 @@ import {
   createTaskList,
   createTaskUpdateTool,
   createHashlineEditTool,
+  createConsensusTool,
 } from "../tools"
 import { getMainSessionID } from "../features/claude-code-session-state"
 import { filterDisabledTools } from "../shared/disabled-tools"
@@ -38,7 +52,6 @@ import type { SkillContext } from "./skill-context"
 import { normalizeToolArgSchemas } from "./normalize-tool-arg-schemas"
 
 type ToolRegistryFactories = {
-  builtinTools: typeof builtinTools
   createBackgroundTools: typeof createBackgroundTools
   createCallOmoAgent: typeof createCallOmoAgent
   createLookAt: typeof createLookAt
@@ -46,7 +59,6 @@ type ToolRegistryFactories = {
   createSkillTool: typeof createSkillTool
   createGrepTools: typeof createGrepTools
   createGlobTools: typeof createGlobTools
-  createAstGrepTools: typeof createAstGrepTools
   createSessionManagerTools: typeof createSessionManagerTools
   createDelegateTask: typeof createDelegateTask
   discoverCommandsSync: typeof discoverCommandsSync
@@ -56,10 +68,22 @@ type ToolRegistryFactories = {
   createTaskList: typeof createTaskList
   createTaskUpdateTool: typeof createTaskUpdateTool
   createHashlineEditTool: typeof createHashlineEditTool
+  createConsensusTool: typeof createConsensusTool
+  createTeamApproveShutdownTool: typeof createTeamApproveShutdownTool
+  createTeamCreateTool: typeof createTeamCreateTool
+  createTeamDeleteTool: typeof createTeamDeleteTool
+  createTeamRejectShutdownTool: typeof createTeamRejectShutdownTool
+  createTeamShutdownRequestTool: typeof createTeamShutdownRequestTool
+  createTeamSendMessageTool: typeof createTeamSendMessageTool
+  createTeamTaskCreateTool: typeof createTeamTaskCreateTool
+  createTeamTaskGetTool: typeof createTeamTaskGetTool
+  createTeamTaskListTool: typeof createTeamTaskListTool
+  createTeamTaskUpdateTool: typeof createTeamTaskUpdateTool
+  createTeamStatusTool: typeof createTeamStatusTool
+  createTeamListTool: typeof createTeamListTool
 }
 
 const defaultToolRegistryFactories: ToolRegistryFactories = {
-  builtinTools,
   createBackgroundTools,
   createCallOmoAgent,
   createLookAt,
@@ -67,7 +91,6 @@ const defaultToolRegistryFactories: ToolRegistryFactories = {
   createSkillTool,
   createGrepTools,
   createGlobTools,
-  createAstGrepTools,
   createSessionManagerTools,
   createDelegateTask,
   discoverCommandsSync,
@@ -77,6 +100,19 @@ const defaultToolRegistryFactories: ToolRegistryFactories = {
   createTaskList,
   createTaskUpdateTool,
   createHashlineEditTool,
+  createConsensusTool,
+  createTeamApproveShutdownTool,
+  createTeamCreateTool,
+  createTeamDeleteTool,
+  createTeamRejectShutdownTool,
+  createTeamShutdownRequestTool,
+  createTeamSendMessageTool,
+  createTeamTaskCreateTool,
+  createTeamTaskGetTool,
+  createTeamTaskListTool,
+  createTeamTaskUpdateTool,
+  createTeamStatusTool,
+  createTeamListTool,
 }
 
 export type ToolRegistryResult = {
@@ -178,6 +214,8 @@ export function createToolRegistry(args: {
   )
   const lookAt = isMultimodalLookerEnabled ? factories.createLookAt(ctx) : null
 
+  const getSisyphusJuniorModelOverride = (agentOverride?: { model?: string }): string | undefined => agentOverride?.model
+
   const delegateTask = factories.createDelegateTask({
     manager: managers.backgroundManager,
     client: ctx.client,
@@ -185,11 +223,13 @@ export function createToolRegistry(args: {
     userCategories: pluginConfig.categories,
     agentOverrides: pluginConfig.agents,
     gitMasterConfig: pluginConfig.git_master,
-    sisyphusJuniorModel: pluginConfig.agents?.["sisyphus-junior"]?.model,
+    sisyphusJuniorModel: getSisyphusJuniorModelOverride(pluginConfig.agents?.["sisyphus-junior"]),
     browserProvider: skillContext.browserProvider,
     disabledSkills: skillContext.disabledSkills,
+    teamModeEnabled: pluginConfig.team_mode?.enabled ?? false,
     availableCategories,
     availableSkills: skillContext.availableSkills,
+    nativeSkills: "skills" in ctx ? (ctx as { skills: SkillLoadOptions["nativeSkills"] }).skills : undefined,
     sisyphusAgentConfig: pluginConfig.sisyphus_agent,
     syncPollTimeoutMs: pluginConfig.background_task?.syncPollTimeoutMs,
     modelFallbackControllerAccessor: managers.modelFallbackControllerAccessor,
@@ -237,13 +277,18 @@ export function createToolRegistry(args: {
     enabledPluginsOverride: pluginConfig.claude_code?.plugins_override,
   })
   const skillTool = factories.createSkillTool({
+    directory: ctx.directory,
     commands,
     skills: skillContext.mergedSkills,
     mcpManager: managers.skillMcpManager,
     getSessionID: getSessionIDForMcp,
     gitMasterConfig: pluginConfig.git_master,
     browserProvider: skillContext.browserProvider,
+    teamModeEnabled: pluginConfig.team_mode?.enabled ?? false,
     nativeSkills: "skills" in ctx ? (ctx as { skills: SkillLoadOptions["nativeSkills"] }).skills : undefined,
+    pluginsEnabled: pluginConfig.claude_code?.plugins ?? true,
+    enabledPluginsOverride: pluginConfig.claude_code?.plugins_override,
+    includeSkillsInDescription: true,
   })
 
   const taskSystemEnabled = isTaskSystemEnabled(pluginConfig)
@@ -261,11 +306,46 @@ export function createToolRegistry(args: {
     ? { edit: factories.createHashlineEditTool(ctx) }
     : {}
 
+  const consensusEnabled = pluginConfig.consensus?.enabled ?? true
+  const consensusToolsRecord: Record<string, ToolDefinition> = consensusEnabled
+    ? { consensus: factories.createConsensusTool(ctx, pluginConfig.consensus) }
+    : {}
+
+  const teamModeToolsRecord: Record<string, ToolDefinition> = pluginConfig.team_mode?.enabled
+    ? {
+        team_create: factories.createTeamCreateTool(
+          pluginConfig.team_mode,
+          ctx.client,
+          managers.backgroundManager,
+          managers.tmuxSessionManager,
+          {
+            userCategories: pluginConfig.categories,
+            sisyphusJuniorModel: getSisyphusJuniorModelOverride(pluginConfig.agents?.["sisyphus-junior"]),
+            agentOverrides: pluginConfig.agents,
+          },
+        ),
+        team_delete: factories.createTeamDeleteTool(
+          pluginConfig.team_mode,
+          ctx.client,
+          managers.backgroundManager,
+          managers.tmuxSessionManager,
+        ),
+        team_shutdown_request: factories.createTeamShutdownRequestTool(pluginConfig.team_mode, ctx.client),
+        team_approve_shutdown: factories.createTeamApproveShutdownTool(pluginConfig.team_mode, ctx.client),
+        team_reject_shutdown: factories.createTeamRejectShutdownTool(pluginConfig.team_mode, ctx.client),
+        team_send_message: factories.createTeamSendMessageTool(pluginConfig.team_mode, ctx.client),
+        team_task_create: factories.createTeamTaskCreateTool(pluginConfig.team_mode, ctx.client),
+        team_task_list: factories.createTeamTaskListTool(pluginConfig.team_mode, ctx.client),
+        team_task_update: factories.createTeamTaskUpdateTool(pluginConfig.team_mode, ctx.client),
+        team_task_get: factories.createTeamTaskGetTool(pluginConfig.team_mode, ctx.client),
+        team_status: factories.createTeamStatusTool(pluginConfig.team_mode, ctx.client, managers.backgroundManager),
+        team_list: factories.createTeamListTool(pluginConfig.team_mode, ctx.client),
+      }
+    : {}
+
   const allTools: Record<string, ToolDefinition> = {
-    ...factories.builtinTools,
     ...factories.createGrepTools(ctx),
     ...factories.createGlobTools(ctx),
-    ...factories.createAstGrepTools(ctx),
     ...factories.createSessionManagerTools(ctx),
     ...backgroundTools,
     call_omo_agent: callOmoAgent,
@@ -274,9 +354,19 @@ export function createToolRegistry(args: {
     skill_mcp: skillMcpTool,
     skill: skillTool,
     ...(interactiveBashEnabled ? { interactive_bash: factories.interactive_bash } : {}),
+    ...teamModeToolsRecord,
     ...taskToolsRecord,
     ...hashlineToolsRecord,
+    ...consensusToolsRecord,
   }
+
+  const allToolNames = Object.keys(allTools)
+  const teamToolCount = allToolNames.filter((toolName) => toolName.startsWith("team_")).length
+  log("[tool-registry] Built tool registry", {
+    totalTools: allToolNames.length,
+    teamModeEnabled: pluginConfig.team_mode?.enabled ?? false,
+    teamToolCount,
+  })
 
   for (const toolDefinition of Object.values(allTools)) {
     normalizeToolArgSchemas(toolDefinition)

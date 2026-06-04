@@ -85,14 +85,6 @@ describe("resolveDeepCategoryPromptAppend", () => {
     expect(result).toBe(DEEP_CATEGORY_PROMPT_APPEND)
   })
 
-  test("returns legacy prompt for openai/gpt-5.3-codex", () => {
-    //#when
-    const result = resolveDeepCategoryPromptAppend("openai/gpt-5.3-codex")
-
-    //#then
-    expect(result).toBe(DEEP_CATEGORY_PROMPT_APPEND)
-  })
-
   test("returns legacy prompt for undefined model", () => {
     //#when
     const result = resolveDeepCategoryPromptAppend(undefined)

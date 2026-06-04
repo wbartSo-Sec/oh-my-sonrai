@@ -55,12 +55,32 @@ const NO_FRONTMATTER_AGENT = `Just a prompt with no frontmatter.`;
 
 describe("claude-code-agent-loader", () => {
   const dirs: string[] = [];
+  const originalEnv = {
+    CLAUDE_CONFIG_DIR: process.env.CLAUDE_CONFIG_DIR,
+    OPENCODE_CONFIG_DIR: process.env.OPENCODE_CONFIG_DIR,
+    XDG_CONFIG_HOME: process.env.XDG_CONFIG_HOME,
+  }
 
   afterEach(() => {
     for (const dir of dirs) {
       rmSync(dir, { recursive: true, force: true });
     }
     dirs.length = 0;
+    if (originalEnv.CLAUDE_CONFIG_DIR === undefined) {
+      delete process.env.CLAUDE_CONFIG_DIR
+    } else {
+      process.env.CLAUDE_CONFIG_DIR = originalEnv.CLAUDE_CONFIG_DIR
+    }
+    if (originalEnv.OPENCODE_CONFIG_DIR === undefined) {
+      delete process.env.OPENCODE_CONFIG_DIR
+    } else {
+      process.env.OPENCODE_CONFIG_DIR = originalEnv.OPENCODE_CONFIG_DIR
+    }
+    if (originalEnv.XDG_CONFIG_HOME === undefined) {
+      delete process.env.XDG_CONFIG_HOME
+    } else {
+      process.env.XDG_CONFIG_HOME = originalEnv.XDG_CONFIG_HOME
+    }
   });
 
   function trackDir(dir: string): string {
@@ -191,31 +211,41 @@ describe("claude-code-agent-loader", () => {
   describe("loadUserAgents", () => {
     test("returns empty object when pointed at dir without agents/", () => {
       const root = trackDir(mkdtempSync(join(tmpdir(), "agent-loader-test-")))
-      // Temporarily set env var — best-effort in parallel test runner
-      const prev = process.env.CLAUDE_CONFIG_DIR
-      try {
-        process.env.CLAUDE_CONFIG_DIR = root
-        const result = loadUserAgents()
-        expect(result).toEqual({})
-      } finally {
-        if (prev !== undefined) process.env.CLAUDE_CONFIG_DIR = prev
-        else delete process.env.CLAUDE_CONFIG_DIR
-      }
+      process.env.CLAUDE_CONFIG_DIR = root
+      const result = loadUserAgents()
+      expect(result).toEqual({})
     })
   })
 
   describe("loadOpencodeGlobalAgents", () => {
     test("returns empty object when pointed at dir without agents/", () => {
       const root = trackDir(mkdtempSync(join(tmpdir(), "agent-loader-test-")))
-      const prev = process.env.OPENCODE_CONFIG_DIR
-      try {
-        process.env.OPENCODE_CONFIG_DIR = root
-        const result = loadOpencodeGlobalAgents()
-        expect(result).toEqual({})
-      } finally {
-        if (prev !== undefined) process.env.OPENCODE_CONFIG_DIR = prev
-        else delete process.env.OPENCODE_CONFIG_DIR
-      }
+      process.env.OPENCODE_CONFIG_DIR = root
+      const result = loadOpencodeGlobalAgents()
+      expect(result).toEqual({})
+    })
+
+    test("loads agents from both the custom and default opencode config directories", () => {
+      const root = trackDir(mkdtempSync(join(tmpdir(), "agent-loader-opencode-global-")))
+      const defaultAgentsDir = join(root, "xdg", "opencode", "agents")
+      const customAgentsDir = join(root, "custom-opencode", "agents")
+
+      mkdirSync(defaultAgentsDir, { recursive: true })
+      mkdirSync(customAgentsDir, { recursive: true })
+
+      writeFileSync(join(defaultAgentsDir, "default-agent.md"), BASIC_AGENT, "utf-8")
+      writeFileSync(
+        join(customAgentsDir, "custom-agent.md"),
+        `---\nname: custom-agent\ndescription: Custom agent\n---\nFrom custom config.`,
+        "utf-8",
+      )
+
+      process.env.XDG_CONFIG_HOME = join(root, "xdg")
+      process.env.OPENCODE_CONFIG_DIR = join(root, "custom-opencode")
+
+      const result = loadOpencodeGlobalAgents()
+
+      expect(Object.keys(result).sort()).toEqual(["custom-agent", "test-agent"])
     })
   })
 

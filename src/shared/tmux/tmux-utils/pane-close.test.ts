@@ -1,221 +1,132 @@
-import { beforeEach, describe, expect, it, mock } from "bun:test"
+import { describe, expect, it } from "bun:test"
 
-type CloseTmuxPane = typeof import("./pane-close").closeTmuxPane
+import type { TmuxCommandResult } from "../runner"
+import { closeTmuxPaneWithDependencies } from "./pane-close"
 
-type SpawnCall = {
-	command: string[]
-	options: {
-		stdout?: string
-		stderr?: string
-	}
+type CloseTmuxPaneDependencies = Parameters<typeof closeTmuxPaneWithDependencies>[1]
+
+type TmuxCommandCall = {
+	readonly tmux: string
+	readonly args: string[]
 }
 
-type FakeSubprocess = {
-	exited: Promise<number>
-	stdout: ReadableStream<Uint8Array>
-	stderr: ReadableStream<Uint8Array>
+type ClosePaneFixture = {
+	readonly calls: TmuxCommandCall[]
+	readonly delayCalls: number[]
+	readonly dependencies: CloseTmuxPaneDependencies
 }
 
-const TIMEOUT = Symbol("timeout")
-const spawnCalls: SpawnCall[] = []
-const queuedProcesses: FakeSubprocess[] = []
-
-function createClosedStream(): ReadableStream<Uint8Array> {
-	return new ReadableStream<Uint8Array>({
-		start(controller) {
-			controller.close()
-		},
-	})
+type FixtureOptions = {
+	readonly insideTmux?: boolean
+	readonly tmuxPath?: string | undefined
+	readonly results?: TmuxCommandResult[]
 }
 
-type DrainSignal = { onPull: () => void }
-
-function createDrainSensitiveStream(byteLength: number, signal: DrainSignal): ReadableStream<Uint8Array> {
-	let remainingBytes = byteLength
-	const chunk = new TextEncoder().encode("x".repeat(16 * 1024))
-
-	return new ReadableStream<Uint8Array>({
-		pull(controller) {
-			signal.onPull()
-
-			if (remainingBytes <= 0) {
-				controller.close()
-				return
-			}
-
-			const nextChunkSize = Math.min(remainingBytes, chunk.byteLength)
-			controller.enqueue(chunk.subarray(0, nextChunkSize))
-			remainingBytes -= nextChunkSize
-		},
-	})
-}
-
-function createProcess(exitCode: number): FakeSubprocess {
+function tmuxResult(overrides: Partial<TmuxCommandResult> = {}): TmuxCommandResult {
 	return {
-		exited: Promise.resolve(exitCode),
-		stdout: createClosedStream(),
-		stderr: createClosedStream(),
+		success: true,
+		output: "",
+		stdout: "",
+		stderr: "",
+		exitCode: 0,
+		...overrides,
 	}
 }
 
-function createStdoutSensitiveProcess(exitCode: number, stdoutBytes: number): FakeSubprocess {
-	let resolveDrained: () => void = () => undefined
-	const drained = new Promise<void>((resolve) => {
-		resolveDrained = resolve
-	})
-	const stdout = createDrainSensitiveStream(stdoutBytes, { onPull: () => resolveDrained() })
+function createFixture(options: FixtureOptions = {}): ClosePaneFixture {
+	const calls: TmuxCommandCall[] = []
+	const delayCalls: number[] = []
+	const results = [...(options.results ?? [tmuxResult()])]
+	const tmuxPath = "tmuxPath" in options ? options.tmuxPath : "tmux"
 
 	return {
-		exited: drained.then(() => exitCode),
-		stdout,
-		stderr: createClosedStream(),
+		calls,
+		delayCalls,
+		dependencies: {
+			isInsideTmux: () => options.insideTmux ?? true,
+			getTmuxPath: async () => tmuxPath,
+			runTmuxCommand: async (tmux, args) => {
+				calls.push({ tmux, args: [...args] })
+				return results.shift() ?? tmuxResult()
+			},
+			log: () => undefined,
+			delay: async (milliseconds) => {
+				delayCalls.push(milliseconds)
+			},
+		},
 	}
-}
-
-const spawnMock = mock((command: string[], options: { stdout?: string; stderr?: string } = {}): FakeSubprocess => {
-	spawnCalls.push({ command, options })
-
-	const process = queuedProcesses.shift()
-	if (!process) {
-		throw new Error(`No fake subprocess configured for ${command.join(" ")}`)
-	}
-
-	return process
-})
-
-const isInsideTmuxMock = mock((): boolean => true)
-const getTmuxPathMock = mock(async (): Promise<string | undefined> => "tmux")
-const logMock = mock(() => undefined)
-
-const paneCloseSpecifier = import.meta.resolve("./pane-close")
-const environmentSpecifier = import.meta.resolve("./environment")
-const loggerSpecifier = import.meta.resolve("../../logger")
-const spawnProcessSpecifier = import.meta.resolve("./spawn-process")
-const tmuxPathResolverSpecifier = import.meta.resolve("../../../tools/interactive-bash/tmux-path-resolver")
-
-async function loadCloseTmuxPane(): Promise<CloseTmuxPane> {
-	const module = await import(`${paneCloseSpecifier}?test=${crypto.randomUUID()}`)
-	return module.closeTmuxPane
-}
-
-function registerModuleMocks(): void {
-	mock.module(spawnProcessSpecifier, () => ({ spawn: spawnMock }))
-	mock.module(environmentSpecifier, () => ({ isInsideTmux: isInsideTmuxMock }))
-	mock.module(tmuxPathResolverSpecifier, () => ({ getTmuxPath: getTmuxPathMock }))
-	mock.module(loggerSpecifier, () => ({ log: logMock }))
-}
-
-function resolveWithin<TResult>(promise: Promise<TResult>, milliseconds: number): Promise<TResult | typeof TIMEOUT> {
-	return Promise.race([
-		promise,
-		new Promise<typeof TIMEOUT>((resolve) => {
-			setTimeout(() => resolve(TIMEOUT), milliseconds)
-		}),
-	])
 }
 
 describe("closeTmuxPane", () => {
-	beforeEach(() => {
-		registerModuleMocks()
-		spawnCalls.length = 0
-		queuedProcesses.length = 0
-		spawnMock.mockClear()
-		isInsideTmuxMock.mockClear()
-		getTmuxPathMock.mockClear()
-		logMock.mockClear()
-
-		isInsideTmuxMock.mockImplementation((): boolean => true)
-		getTmuxPathMock.mockImplementation(async (): Promise<string | undefined> => "tmux")
-	})
-
 	it("#given pane exists #when closeTmuxPane called #then returns true and invokes send-keys + kill-pane in order", async () => {
 		// given
-		const closeTmuxPane = await loadCloseTmuxPane()
-		queuedProcesses.push(createProcess(0), createProcess(0))
+		const fixture = createFixture()
 
 		// when
-		const result = await closeTmuxPane("%42")
+		const result = await closeTmuxPaneWithDependencies("%42", fixture.dependencies)
 
 		// then
 		expect(result).toBe(true)
-		expect(spawnCalls).toEqual([
-			{ command: ["tmux", "send-keys", "-t", "%42", "C-c"], options: { stdout: "ignore", stderr: "ignore" } },
-			{ command: ["tmux", "kill-pane", "-t", "%42"], options: { stdout: "pipe", stderr: "pipe" } },
+		expect(fixture.calls).toEqual([
+			{ tmux: "tmux", args: ["send-keys", "-t", "%42", "C-c"] },
+			{ tmux: "tmux", args: ["kill-pane", "-t", "%42"] },
 		])
+		expect(fixture.delayCalls).toEqual([250])
 	})
 
-	it("#given not inside tmux #when closeTmuxPane called #then returns false without spawn", async () => {
+	it("#given not inside tmux #when closeTmuxPane called #then returns false without runner calls", async () => {
 		// given
-		const closeTmuxPane = await loadCloseTmuxPane()
-		isInsideTmuxMock.mockImplementation((): boolean => false)
+		const fixture = createFixture({ insideTmux: false })
 
 		// when
-		const result = await closeTmuxPane("%42")
+		const result = await closeTmuxPaneWithDependencies("%42", fixture.dependencies)
 
 		// then
 		expect(result).toBe(false)
-		expect(spawnCalls).toHaveLength(0)
+		expect(fixture.calls).toEqual([])
 	})
 
-	it("#given tmux not found #when closeTmuxPane called #then returns false without spawn", async () => {
+	it("#given tmux not found #when closeTmuxPane called #then returns false without runner calls", async () => {
 		// given
-		const closeTmuxPane = await loadCloseTmuxPane()
-		getTmuxPathMock.mockImplementation(async (): Promise<string | undefined> => undefined)
+		const fixture = createFixture({ tmuxPath: undefined })
 
 		// when
-		const result = await closeTmuxPane("%42")
+		const result = await closeTmuxPaneWithDependencies("%42", fixture.dependencies)
 
 		// then
 		expect(result).toBe(false)
-		expect(spawnCalls).toHaveLength(0)
+		expect(fixture.calls).toEqual([])
 	})
 
 	it("#given kill-pane fails with unknown error #when closeTmuxPane called #then returns false", async () => {
 		// given
-		const closeTmuxPane = await loadCloseTmuxPane()
-		queuedProcesses.push(createProcess(0), createProcess(1))
+		const fixture = createFixture({
+			results: [
+				tmuxResult(),
+				tmuxResult({ success: false, stderr: "permission denied", exitCode: 1 }),
+			],
+		})
 
 		// when
-		const result = await closeTmuxPane("%42")
+		const result = await closeTmuxPaneWithDependencies("%42", fixture.dependencies)
 
 		// then
 		expect(result).toBe(false)
 	})
 
-	it("#given pane already closed by Ctrl+C (kill-pane reports 'can't find pane') #when closeTmuxPane called #then returns true", async () => {
+	it("#given pane already closed by Ctrl+C #when kill-pane reports can't find pane #then returns true", async () => {
 		// given
-		const closeTmuxPane = await loadCloseTmuxPane()
-		queuedProcesses.push(
-			createProcess(0),
-			{
-				exited: Promise.resolve(1),
-				stdout: createClosedStream(),
-				stderr: new ReadableStream<Uint8Array>({
-					start(controller) {
-						controller.enqueue(new TextEncoder().encode("can't find pane: %42\n"))
-						controller.close()
-					},
-				}),
-			},
-		)
+		const fixture = createFixture({
+			results: [
+				tmuxResult(),
+				tmuxResult({ success: false, stderr: "can't find pane: %42", exitCode: 1 }),
+			],
+		})
 
 		// when
-		const result = await closeTmuxPane("%42")
+		const result = await closeTmuxPaneWithDependencies("%42", fixture.dependencies)
 
 		// then
-		expect(result).toBe(true)
-	})
-
-	it("#given kill-pane stdout stream waits for drain #when closeTmuxPane called #then returns true once drainer consumes stdout", async () => {
-		// given
-		const closeTmuxPane = await loadCloseTmuxPane()
-		queuedProcesses.push(createProcess(0), createStdoutSensitiveProcess(0, 16 * 1024))
-
-		// when
-		const result = await resolveWithin(closeTmuxPane("%42"), 2000)
-
-		// then
-		expect(result).not.toBe(TIMEOUT)
 		expect(result).toBe(true)
 	})
 })

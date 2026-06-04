@@ -18,10 +18,12 @@ describe("runCliInstaller telemetry isolation", () => {
         hasOpenAI: false,
         hasGemini: false,
         hasCopilot: false,
+        hasCodex: false,
         hasOpencodeZen: false,
         hasZaiCodingPlan: false,
         hasKimiForCoding: false,
         hasOpencodeGo: false,
+      hasBailianCodingPlan: false,
         hasVercelAiGateway: false,
       }),
       spyOn(configManager, "isOpenCodeInstalled").mockResolvedValue(true),
@@ -39,8 +41,6 @@ describe("runCliInstaller telemetry isolation", () => {
     mock.module("../shared/posthog", () => ({
       createCliPostHog: mock(() => ({
         trackActive: mock(() => {}),
-        capture: mock(() => {}),
-        captureException: mock(() => {}),
         shutdown: mock(async () => {
           throw new Error("shutdown failed")
         }),

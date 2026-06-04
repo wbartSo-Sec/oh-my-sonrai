@@ -8,8 +8,13 @@ import {
   normalizeAgentForPromptKey,
 } from "../shared/agent-display-names";
 import { AGENT_NAME_MAP } from "../shared/migration";
-import { registerAgentName } from "../features/claude-code-session-state";
+import { setDefaultAgentForSort } from "../shared/agent-sort-shim";
 import {
+  clearRegisteredAgentNames,
+  registerAgentName,
+} from "../features/claude-code-session-state";
+import {
+  deduplicateSkillsByName,
   discoverConfigSourceSkills,
   discoverGlobalAgentsSkills,
   discoverOpencodeGlobalSkills,
@@ -18,10 +23,10 @@ import {
   discoverProjectClaudeSkills,
   discoverUserClaudeSkills,
 } from "../features/opencode-skill-loader";
-import { 
-  loadProjectAgents, 
-  loadUserAgents, 
-  loadOpencodeGlobalAgents, 
+import {
+  loadProjectAgents,
+  loadUserAgents,
+  loadOpencodeGlobalAgents,
   loadOpencodeProjectAgents,
   loadAgentDefinitions,
   readOpencodeConfigAgents,
@@ -35,6 +40,7 @@ import {
 } from "./agent-override-protection";
 import { buildPrometheusAgentConfig } from "./prometheus-agent-config-builder";
 import { buildPlanDemoteConfig } from "./plan-model-inheritance";
+import { adaptHostSkillConfig } from "../shared/host-skill-config";
 
 type AgentConfigRecord = Record<string, Record<string, unknown> | undefined> & {
   build?: Record<string, unknown>;
@@ -51,18 +57,20 @@ function getConfiguredDefaultAgent(config: Record<string, unknown>): string | un
 export async function applyAgentConfig(params: {
   config: Record<string, unknown>;
   pluginConfig: OhMyOpenCodeConfig;
-  ctx: { directory: string; client?: any };
+  ctx: { directory: string; client?: unknown };
   pluginComponents: PluginComponents;
 }): Promise<Record<string, unknown>> {
   const migratedDisabledAgents = (params.pluginConfig.disabled_agents ?? []).map(
-    (agent) => {
+    (agent: string) => {
       return AGENT_NAME_MAP[agent.toLowerCase()] ?? AGENT_NAME_MAP[agent] ?? agent;
     },
   ) as typeof params.pluginConfig.disabled_agents;
 
   const includeClaudeSkillsForAwareness = params.pluginConfig.claude_code?.skills ?? true;
+  const hostSkillConfig = adaptHostSkillConfig(params.config.skills);
   const [
     discoveredConfigSourceSkills,
+    discoveredHostConfigSkills,
     discoveredUserSkills,
     discoveredProjectSkills,
     discoveredProjectAgentsSkills,
@@ -72,6 +80,10 @@ export async function applyAgentConfig(params: {
   ] = await Promise.all([
     discoverConfigSourceSkills({
       config: params.pluginConfig.skills,
+      configDir: params.ctx.directory,
+    }),
+    discoverConfigSourceSkills({
+      config: hostSkillConfig,
       configDir: params.ctx.directory,
     }),
     includeClaudeSkillsForAwareness ? discoverUserClaudeSkills() : Promise.resolve([]),
@@ -86,15 +98,24 @@ export async function applyAgentConfig(params: {
     includeClaudeSkillsForAwareness ? discoverGlobalAgentsSkills() : Promise.resolve([]),
   ]);
 
-  const allDiscoveredSkills = [
+  // Same skill name reaches the agent prompt through multiple discovery paths
+  // (e.g. ~/.agents/skills/foo with a symlink at ~/.claude/skills/foo from
+  // `npx skills add ...`). Without dedup the SisyphusKAtlasKHephaestus
+  // `**YOUR SKILLS (PRIORITY)**` line renders the same skill twice, which
+  // both confuses the agent and wastes 5-10k tokens per session for users
+  // with cross-installed skill ecosystems (issue #4573). `discoverAllSkills`
+  // already collapses duplicates via the same helper, so doing it here keeps
+  // both rendering paths agreeing on the skill set.
+  const allDiscoveredSkills = deduplicateSkillsByName([
     ...discoveredConfigSourceSkills,
+    ...discoveredHostConfigSkills,
     ...discoveredOpencodeProjectSkills,
     ...discoveredProjectSkills,
     ...discoveredProjectAgentsSkills,
     ...discoveredOpencodeGlobalSkills,
     ...discoveredUserSkills,
     ...discoveredGlobalAgentsSkills,
-  ];
+  ]);
 
   const browserProvider =
     params.pluginConfig.browser_automation_engine?.provider ?? "playwright";
@@ -104,14 +125,15 @@ export async function applyAgentConfig(params: {
   const disableOmoEnv = params.pluginConfig.experimental?.disable_omo_env ?? false;
 
   const includeClaudeAgents = params.pluginConfig.claude_code?.agents ?? true;
-  const userAgents = includeClaudeAgents ? loadUserAgents() : {};
-  const projectAgents = includeClaudeAgents ? loadProjectAgents(params.ctx.directory) : {};
+  const anthropicProvider = params.pluginConfig.claude_code?.anthropic_provider;
+  const userAgents = includeClaudeAgents ? loadUserAgents(anthropicProvider) : {};
+  const projectAgents = includeClaudeAgents ? loadProjectAgents(params.ctx.directory, anthropicProvider) : {};
   const opencodeGlobalAgents = loadOpencodeGlobalAgents();
   const opencodeProjectAgents = loadOpencodeProjectAgents(params.ctx.directory);
   const rawPluginAgents = params.pluginComponents.agents;
 
   const agentDefinitionAgents = params.pluginConfig.agent_definitions
-    ? loadAgentDefinitions(params.pluginConfig.agent_definitions, "definition-file")
+    ? loadAgentDefinitions(params.pluginConfig.agent_definitions, "definition-file", anthropicProvider)
     : {};
   const opencodeConfigAgents = readOpencodeConfigAgents(params.ctx.directory);
 
@@ -172,10 +194,11 @@ export async function applyAgentConfig(params: {
     disabledSkills,
     useTaskSystem,
     disableOmoEnv,
+    params.pluginConfig.team_mode?.enabled ?? false,
   );
 
   const disabledAgentNames = new Set(
-    (migratedDisabledAgents ?? []).map(a => a.toLowerCase())
+    (migratedDisabledAgents ?? []).map((agent: string) => agent.toLowerCase())
   );
 
   const filterDisabledAgents = (agents: Record<string, unknown>) =>
@@ -249,24 +272,6 @@ export async function applyAgentConfig(params: {
       agentConfig["OpenCode-Builder"] = override ? { ...base, ...override } : base;
     }
 
-    const filteredConfigAgents = configAgent
-      ? Object.fromEntries(
-          Object.entries(configAgent)
-            .filter(([key]) => {
-              if (key === "build") return false;
-              if (key === "plan" && shouldDemotePlan) return false;
-              if (key in builtinAgents) return false;
-              return true;
-            })
-            .map(([key, value]) => {
-              if (!value) return [key, value];
-              const migrated = migrateAgentConfig(value as Record<string, unknown>);
-              if (!migrated.mode) migrated.mode = "subagent";
-              return [key, migrated];
-            }),
-        )
-      : {};
-
     const migratedBuild = configAgent?.build
       ? migrateAgentConfig(configAgent.build as Record<string, unknown>)
       : {};
@@ -282,6 +287,26 @@ export async function applyAgentConfig(params: {
       ...Object.keys(agentConfig),
       ...Object.keys(builtinAgents),
     ]);
+    const filteredConfigAgentSource = configAgent
+      ? filterProtectedAgentOverrides(
+          Object.fromEntries(
+            Object.entries(configAgent).filter(([key]) => {
+              if (key === "build") return false;
+              if (key === "plan" && shouldDemotePlan) return false;
+              return true;
+            }),
+          ),
+          protectedBuiltinAgentNames,
+        )
+      : {};
+    const filteredConfigAgents = Object.fromEntries(
+      Object.entries(filteredConfigAgentSource).map(([key, value]) => {
+        if (!value) return [key, value];
+        const migrated = migrateAgentConfig(value as Record<string, unknown>);
+        if (!migrated.mode) migrated.mode = "subagent";
+        return [key, migrated];
+      }),
+    );
     const filteredUserAgents = filterProtectedAgentOverrides(
       userAgents,
       protectedBuiltinAgentNames,
@@ -363,16 +388,17 @@ export async function applyAgentConfig(params: {
       protectedBuiltinAgentNames,
     );
 
-    const defaultedConfigAgents = configAgent
-      ? Object.fromEntries(
-          Object.entries(configAgent).map(([key, value]) => {
-            if (!value) return [key, value];
-            const migrated = migrateAgentConfig(value as Record<string, unknown>);
-            if (!migrated.mode) migrated.mode = "subagent";
-            return [key, migrated];
-          }),
-        )
+    const filteredConfigAgentSource = configAgent
+      ? filterProtectedAgentOverrides(configAgent, protectedBuiltinAgentNames)
       : {};
+    const defaultedConfigAgents = Object.fromEntries(
+      Object.entries(filteredConfigAgentSource).map(([key, value]) => {
+        if (!value) return [key, value];
+        const migrated = migrateAgentConfig(value as Record<string, unknown>);
+        if (!migrated.mode) migrated.mode = "subagent";
+        return [key, migrated];
+      }),
+    );
 
     params.config.agent = {
       ...builtinAgents,
@@ -391,13 +417,22 @@ export async function applyAgentConfig(params: {
   if (params.config.agent) {
     params.config.agent = remapAgentKeysToDisplayNames(
       params.config.agent as Record<string, unknown>,
+      params.pluginConfig.agents as Record<string, { displayName?: string } | undefined> | undefined,
     );
     params.config.agent = reorderAgentsByPriority(
       params.config.agent as Record<string, unknown>,
+      params.pluginConfig.agent_order,
+    );
+  }
+
+  if (configuredDefaultAgent) {
+    setDefaultAgentForSort(
+      (params.config as { default_agent?: string }).default_agent ?? configuredDefaultAgent,
     );
   }
 
   const agentResult = params.config.agent as Record<string, unknown>;
+  clearRegisteredAgentNames();
   for (const name of Object.keys(agentResult)) {
     registerAgentName(name);
   }

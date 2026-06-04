@@ -100,7 +100,7 @@ describe("pollSyncSession", () => {
       }, 50)
 
       // then: times out (ignores stale error)
-      expect(result).toContain("Poll timeout reached")
+      expect(result).toContain("Poll inactivity timeout reached")
     })
 
     test("detects completion when assistant message has terminal finish reason", async () => {
@@ -421,6 +421,37 @@ describe("pollSyncSession", () => {
       expect(result).toContain("ses_abort")
       expect(abortCount).toBe(1)
     })
+
+    test("retries final message fetch on abort before returning aborted", async () => {
+      // given: abort signal set and message fetch keeps failing
+      const { pollSyncSession } = require("./sync-session-poller")
+      let abortCount = 0
+      let messageCallCount = 0
+      const mockClient = {
+        session: {
+          abort: async () => {
+            abortCount++
+          },
+          messages: async () => {
+            messageCallCount++
+            throw new Error("temporary fetch failure")
+          },
+          status: async () => ({ data: {} }),
+        },
+      }
+
+      const result = await pollSyncSession(createMockCtx(true), mockClient, {
+        sessionID: "ses_abort_retry",
+        agentToUse: "test-agent",
+        toastManager: { removeTask: () => {} },
+        taskId: "task_123",
+      })
+
+      // then
+      expect(result).toContain("Task aborted")
+      expect(messageCallCount).toBe(3)
+      expect(abortCount).toBe(1)
+    })
   })
 
   describe("timeout handling", () => {
@@ -459,7 +490,7 @@ describe("pollSyncSession", () => {
       }, 0)
 
       // then: returns timeout error
-      expect(result).toBe("Poll timeout reached after 50ms for session ses_timeout")
+      expect(result).toBe("Poll inactivity timeout reached after 50ms without active OpenCode status for session ses_timeout")
       expect(abortCount).toBe(1)
     })
   })
@@ -653,4 +684,69 @@ describe("pollSyncSession", () => {
     })
   })
 
+  describe("direct child background task gating", () => {
+    const completeMessages = {
+      data: [
+        { info: { id: "msg_001", role: "user", time: { created: 1000 } } },
+        {
+          info: { id: "msg_002", role: "assistant", time: { created: 2000 }, finish: "stop" },
+          parts: [{ type: "text", text: "Done" }],
+        },
+      ],
+    }
+
+    test("waits for a fresh terminal turn after child background tasks clear", async () => {
+      const { pollSyncSession } = require("./sync-session-poller")
+      let childCheck = 0
+      const synthesizedMessages = {
+        data: [
+          ...completeMessages.data,
+          { info: { id: "msg_003", role: "user", time: { created: 3000 } } },
+          {
+            info: { id: "msg_004", role: "assistant", time: { created: 4000 }, finish: "stop" },
+            parts: [{ type: "text", text: "Synthesized" }],
+          },
+        ],
+      }
+      const mockClient = {
+        session: {
+          messages: async () => (childCheck > 1 ? synthesizedMessages : completeMessages),
+          status: async () => ({ data: { ses_test: { type: "idle" } } }),
+        },
+      }
+
+      const result = await pollSyncSession(createMockCtx(), mockClient, {
+        sessionID: "ses_test",
+        agentToUse: "test-agent",
+        toastManager: null,
+        taskId: undefined,
+        childWakeGraceMs: 10_000,
+        hasActiveChildBackgroundTasks: () => ++childCheck === 1,
+      })
+
+      expect(result).toBeNull()
+      expect(childCheck).toBeGreaterThanOrEqual(3)
+    })
+
+    test("times out when direct child background tasks never finish", async () => {
+      const { pollSyncSession } = require("./sync-session-poller")
+      const mockClient = {
+        session: {
+          messages: async () => completeMessages,
+          status: async () => ({ data: { ses_test: { type: "idle" } } }),
+          abort: async () => ({}),
+        },
+      }
+
+      const result = await pollSyncSession(createMockCtx(), mockClient, {
+        sessionID: "ses_test",
+        agentToUse: "test-agent",
+        toastManager: null,
+        taskId: undefined,
+        hasActiveChildBackgroundTasks: () => true,
+      }, 30)
+
+      expect(result).toContain("Poll inactivity timeout reached")
+    })
+  })
 })

@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, mock } from "bun:test"
-import { sweepStaleOmoAgentSessionsWith, type SweepDeps } from "./stale-session-sweep"
+import { sweepStaleOmoAgentSessionsWith, sweepTmuxSessionsWith, type SweepDeps } from "./stale-session-sweep"
 
 type SweepFixture = {
 	deps: SweepDeps
@@ -99,6 +99,19 @@ describe("sweepStaleOmoAgentSessionsWith", () => {
 		expect(fixture.killed).toEqual(["omo-agents-99991", "omo-agents-99992"])
 	})
 
+	it("#given suffixed sessions with dead PIDs #when sweep called #then they are also killed", async () => {
+		// given
+		fixture.setCandidates(["omo-agents-99991-1", "omo-agents-99992-abc123"])
+		fixture.setAlive(() => false)
+
+		// when
+		const result = await sweepStaleOmoAgentSessionsWith(fixture.deps)
+
+		// then
+		expect(result).toBe(2)
+		expect(fixture.killed).toEqual(["omo-agents-99991-1", "omo-agents-99992-abc123"])
+	})
+
 	it("#given session matches current PID #when sweep called #then it is NOT killed", async () => {
 		// given
 		fixture.setCandidates([`omo-agents-${fixture.deps.currentPid}`, "omo-agents-99999"])
@@ -139,9 +152,9 @@ describe("sweepStaleOmoAgentSessionsWith", () => {
 		expect(fixture.killSessionMock).toHaveBeenCalledTimes(1)
 	})
 
-	it("#given non-matching sessions mixed in #when sweep called #then only omo-agents-<pid> sessions are considered", async () => {
+	it("#given non-matching sessions mixed in #when sweep called #then only supported omo-agents session names are considered", async () => {
 		// given
-		fixture.setCandidates(["main", "omo-agents-99999", "other-session", "omo-agents-abc"])
+		fixture.setCandidates(["main", "omo-agents-99999", "omo-agents-99999-1-2", "other-session", "omo-agents-abc"])
 		fixture.setAlive(() => false)
 
 		// when
@@ -150,5 +163,27 @@ describe("sweepStaleOmoAgentSessionsWith", () => {
 		// then
 		expect(result).toBe(1)
 		expect(fixture.killed).toEqual(["omo-agents-99999"])
+	})
+})
+
+describe("sweepTmuxSessionsWith", () => {
+	let fixture: SweepFixture
+
+	beforeEach(() => {
+		fixture = createFixture()
+	})
+
+	it("#given custom predicate for team sessions #when shared sweep called #then only matching sessions are killed", async () => {
+		// given
+		fixture.setCandidates(["omo-team-A", "omo-team-B", "main", "omo-agents-99999"])
+
+		// when
+		const result = await sweepTmuxSessionsWith(fixture.deps, {
+			predicate: (sessionName) => sessionName.startsWith("omo-team-"),
+		})
+
+		// then
+		expect(result).toEqual(["omo-team-A", "omo-team-B"])
+		expect(fixture.killed).toEqual(["omo-team-A", "omo-team-B"])
 	})
 })

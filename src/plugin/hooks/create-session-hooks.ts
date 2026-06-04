@@ -5,7 +5,6 @@ import type { ModelCacheState } from "../../plugin-state"
 import type { PluginContext } from "../types"
 
 import {
-  createContextWindowMonitorHook,
   createSessionRecoveryHook,
   createSessionNotification,
   createThinkModeHook,
@@ -41,7 +40,6 @@ import { sessionExists } from "../../tools"
 import { isTmuxIntegrationEnabled } from "../../create-runtime-tmux-config"
 
 export type SessionHooks = {
-  contextWindowMonitor: ReturnType<typeof createContextWindowMonitorHook> | null
   preemptiveCompaction: ReturnType<typeof createPreemptiveCompactionHook> | null
   sessionRecovery: ReturnType<typeof createSessionRecoveryHook> | null
   sessionNotification: ReturnType<typeof createSessionNotification> | null
@@ -80,11 +78,6 @@ export function createSessionHooks(args: {
   const safeHook = <T>(hookName: HookName, factory: () => T): T | null =>
     safeCreateHook(hookName, factory, { enabled: safeHookEnabled })
 
-  const contextWindowMonitor = isHookEnabled("context-window-monitor")
-    ? safeHook("context-window-monitor", () =>
-        createContextWindowMonitorHook(ctx, modelCacheState))
-    : null
-
   const preemptiveCompaction =
     isHookEnabled("preemptive-compaction") &&
     pluginConfig.experimental?.preemptive_compaction
@@ -101,8 +94,8 @@ export function createSessionHooks(args: {
   if (isHookEnabled("session-notification")) {
     const forceEnable = pluginConfig.notification?.force_enable ?? false
     const externalNotifier = detectExternalNotificationPlugin(ctx.directory)
-    if (externalNotifier.detected && !forceEnable) {
-      log(getNotificationConflictWarning(externalNotifier.pluginName!))
+    if (externalNotifier.detected && externalNotifier.pluginName && !forceEnable) {
+      log(getNotificationConflictWarning(externalNotifier.pluginName))
     } else {
       sessionNotification = safeHook("session-notification", () => createSessionNotification(ctx))
     }
@@ -277,7 +270,6 @@ export function createSessionHooks(args: {
     : null
 
   return {
-    contextWindowMonitor,
     preemptiveCompaction,
     sessionRecovery,
     sessionNotification,

@@ -1,64 +1,70 @@
+import type { TmuxCommandResult } from "../runner"
+
 function delay(milliseconds: number): Promise<void> {
 	return new Promise((resolve) => setTimeout(resolve, milliseconds))
 }
 
-async function readStream(stream: ReadableStream<Uint8Array> | null | undefined): Promise<string> {
-	return stream ? new Response(stream).text() : ""
+type CloseTmuxPaneDependencies = {
+	readonly isInsideTmux: () => boolean
+	readonly getTmuxPath: () => Promise<string | null | undefined>
+	readonly runTmuxCommand: (tmuxPath: string, args: string[]) => Promise<TmuxCommandResult>
+	readonly log: (message: string, data?: unknown) => void
+	readonly delay: (milliseconds: number) => Promise<void>
 }
 
 export async function closeTmuxPane(paneId: string): Promise<boolean> {
-	const [{ log }, { isInsideTmux }, { getTmuxPath }, { spawn }] = await Promise.all([
+	const [{ log }, { isInsideTmux }, { getTmuxPath }, { runTmuxCommand }] = await Promise.all([
 		import("../../logger"),
 		import("./environment"),
 		import("../../../tools/interactive-bash/tmux-path-resolver"),
-		import("./spawn-process"),
+		import("../runner"),
 	])
 
-	if (!isInsideTmux()) {
-		log("[closeTmuxPane] SKIP: not inside tmux")
+	return closeTmuxPaneWithDependencies(paneId, {
+		isInsideTmux,
+		getTmuxPath,
+		runTmuxCommand,
+		log,
+		delay,
+	})
+}
+
+export async function closeTmuxPaneWithDependencies(
+	paneId: string,
+	dependencies: CloseTmuxPaneDependencies,
+): Promise<boolean> {
+	if (!dependencies.isInsideTmux()) {
+		dependencies.log("[closeTmuxPane] SKIP: not inside tmux")
 		return false
 	}
 
-	const tmux = await getTmuxPath()
+	const tmux = await dependencies.getTmuxPath()
 	if (!tmux) {
-		log("[closeTmuxPane] SKIP: tmux not found")
+		dependencies.log("[closeTmuxPane] SKIP: tmux not found")
 		return false
 	}
 
-	log("[closeTmuxPane] sending Ctrl+C for graceful shutdown", { paneId })
-	const ctrlCProc = spawn([tmux, "send-keys", "-t", paneId, "C-c"], {
-		stdout: "ignore",
-		stderr: "ignore",
-	})
-	await ctrlCProc.exited
+	dependencies.log("[closeTmuxPane] sending Ctrl+C for graceful shutdown", { paneId })
+	await dependencies.runTmuxCommand(tmux, ["send-keys", "-t", paneId, "C-c"])
 
-	await delay(250)
+	await dependencies.delay(250)
 
-	log("[closeTmuxPane] killing pane", { paneId })
+	dependencies.log("[closeTmuxPane] killing pane", { paneId })
 
-	const killPaneProc = spawn([tmux, "kill-pane", "-t", paneId], {
-		stdout: "pipe",
-		stderr: "pipe",
-	})
-	const [, stderr, exitCode] = await Promise.all([
-		readStream(killPaneProc.stdout),
-		readStream(killPaneProc.stderr),
-		killPaneProc.exited,
-	])
-
-	const trimmedStderr = stderr.trim()
-	const paneAlreadyGone = exitCode !== 0 && /can't find pane/i.test(trimmedStderr)
+	const result = await dependencies.runTmuxCommand(tmux, ["kill-pane", "-t", paneId])
+	const trimmedStderr = result.stderr.trim()
+	const paneAlreadyGone = result.exitCode !== 0 && /can't find pane/i.test(trimmedStderr)
 
 	if (paneAlreadyGone) {
-		log("[closeTmuxPane] SUCCESS (pane already closed by Ctrl+C)", { paneId })
+		dependencies.log("[closeTmuxPane] SUCCESS (pane already closed by Ctrl+C)", { paneId })
 		return true
 	}
 
-	if (exitCode !== 0) {
-		log("[closeTmuxPane] FAILED", { paneId, exitCode, stderr: trimmedStderr })
+	if (result.exitCode !== 0) {
+		dependencies.log("[closeTmuxPane] FAILED", { paneId, exitCode: result.exitCode, stderr: trimmedStderr })
 		return false
 	}
 
-	log("[closeTmuxPane] SUCCESS", { paneId })
+	dependencies.log("[closeTmuxPane] SUCCESS", { paneId })
 	return true
 }

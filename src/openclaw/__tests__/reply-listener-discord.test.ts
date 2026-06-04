@@ -8,11 +8,12 @@ import * as injectionModule from "../reply-listener-injection"
 import * as sessionRegistryModule from "../session-registry"
 import type { ReplyListenerDaemonState } from "../reply-listener-state"
 import type { OpenClawConfig } from "../types"
+import { unsafeTestValue } from "../../../test-support/unsafe-test-value"
 
 const originalFetch = globalThis.fetch
 
 const tempHome = mkdtempSync(join(tmpdir(), "openclaw-reply-listener-discord-"))
-const stateDir = join(tempHome, ".omx", "state")
+const stateDir = join(tempHome, ".omo", "openclaw", "state")
 const stateFilePath = join(stateDir, "reply-listener-state.json")
 
 function createConfig(): OpenClawConfig {
@@ -75,7 +76,7 @@ describe("pollDiscordReplies", () => {
         status: 401,
       }),
     ))
-    globalThis.fetch = fetchMock as unknown as typeof fetch
+    globalThis.fetch = unsafeTestValue<typeof fetch>(fetchMock)
 
     const state = createState()
 
@@ -109,7 +110,7 @@ describe("pollDiscordReplies", () => {
         ),
       )
       .mockResolvedValueOnce(new Response(null, { status: 204 }))
-    globalThis.fetch = fetchMock as unknown as typeof fetch
+    globalThis.fetch = unsafeTestValue<typeof fetch>(fetchMock)
     const lookupSpy = spyOn(sessionRegistryModule, "lookupByMessageId").mockReturnValue({
       sessionId: "ses-1",
       tmuxSession: "session-1",

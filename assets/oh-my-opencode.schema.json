@@ -14,6 +14,14 @@
     "default_run_agent": {
       "type": "string"
     },
+    "agent_order": {
+      "maxItems": 64,
+      "type": "array",
+      "items": {
+        "type": "string",
+        "maxLength": 128
+      }
+    },
     "agent_definitions": {
       "type": "array",
       "items": {
@@ -45,7 +53,11 @@
           "frontend-ui-ux",
           "git-master",
           "review-work",
-          "ai-slop-remover"
+          "remove-ai-slops",
+          "init-deep",
+          "security-research",
+          "security-review",
+          "team-mode"
         ]
       }
     },
@@ -60,18 +72,24 @@
       "items": {
         "type": "string",
         "enum": [
-          "init-deep",
           "ralph-loop",
           "ulw-loop",
           "cancel-ralph",
           "refactor",
           "start-work",
           "stop-continuation",
-          "remove-ai-slops"
+          "remove-ai-slops",
+          "hyperplan"
         ]
       }
     },
     "disabled_tools": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "disabled_providers": {
       "type": "array",
       "items": {
         "type": "string"
@@ -128,7 +146,8 @@
                           "low",
                           "medium",
                           "high",
-                          "xhigh"
+                          "xhigh",
+                          "max"
                         ]
                       },
                       "temperature": {
@@ -194,7 +213,8 @@
                               "low",
                               "medium",
                               "high",
-                              "xhigh"
+                              "xhigh",
+                              "max"
                             ]
                           },
                           "temperature": {
@@ -294,6 +314,9 @@
             "color": {
               "type": "string",
               "pattern": "^#[0-9A-Fa-f]{6}$"
+            },
+            "displayName": {
+              "type": "string"
             },
             "permission": {
               "type": "object",
@@ -397,7 +420,8 @@
                 "low",
                 "medium",
                 "high",
-                "xhigh"
+                "xhigh",
+                "max"
               ]
             },
             "textVerbosity": {
@@ -478,7 +502,8 @@
                           "low",
                           "medium",
                           "high",
-                          "xhigh"
+                          "xhigh",
+                          "max"
                         ]
                       },
                       "temperature": {
@@ -544,7 +569,8 @@
                               "low",
                               "medium",
                               "high",
-                              "xhigh"
+                              "xhigh",
+                              "max"
                             ]
                           },
                           "temperature": {
@@ -644,6 +670,9 @@
             "color": {
               "type": "string",
               "pattern": "^#[0-9A-Fa-f]{6}$"
+            },
+            "displayName": {
+              "type": "string"
             },
             "permission": {
               "type": "object",
@@ -747,7 +776,8 @@
                 "low",
                 "medium",
                 "high",
-                "xhigh"
+                "xhigh",
+                "max"
               ]
             },
             "textVerbosity": {
@@ -828,7 +858,8 @@
                           "low",
                           "medium",
                           "high",
-                          "xhigh"
+                          "xhigh",
+                          "max"
                         ]
                       },
                       "temperature": {
@@ -894,7 +925,8 @@
                               "low",
                               "medium",
                               "high",
-                              "xhigh"
+                              "xhigh",
+                              "max"
                             ]
                           },
                           "temperature": {
@@ -994,6 +1026,9 @@
             "color": {
               "type": "string",
               "pattern": "^#[0-9A-Fa-f]{6}$"
+            },
+            "displayName": {
+              "type": "string"
             },
             "permission": {
               "type": "object",
@@ -1097,7 +1132,8 @@
                 "low",
                 "medium",
                 "high",
-                "xhigh"
+                "xhigh",
+                "max"
               ]
             },
             "textVerbosity": {
@@ -1178,7 +1214,8 @@
                           "low",
                           "medium",
                           "high",
-                          "xhigh"
+                          "xhigh",
+                          "max"
                         ]
                       },
                       "temperature": {
@@ -1244,7 +1281,8 @@
                               "low",
                               "medium",
                               "high",
-                              "xhigh"
+                              "xhigh",
+                              "max"
                             ]
                           },
                           "temperature": {
@@ -1344,6 +1382,9 @@
             "color": {
               "type": "string",
               "pattern": "^#[0-9A-Fa-f]{6}$"
+            },
+            "displayName": {
+              "type": "string"
             },
             "permission": {
               "type": "object",
@@ -1447,7 +1488,8 @@
                 "low",
                 "medium",
                 "high",
-                "xhigh"
+                "xhigh",
+                "max"
               ]
             },
             "textVerbosity": {
@@ -1531,7 +1573,8 @@
                           "low",
                           "medium",
                           "high",
-                          "xhigh"
+                          "xhigh",
+                          "max"
                         ]
                       },
                       "temperature": {
@@ -1597,7 +1640,8 @@
                               "low",
                               "medium",
                               "high",
-                              "xhigh"
+                              "xhigh",
+                              "max"
                             ]
                           },
                           "temperature": {
@@ -1697,6 +1741,9 @@
             "color": {
               "type": "string",
               "pattern": "^#[0-9A-Fa-f]{6}$"
+            },
+            "displayName": {
+              "type": "string"
             },
             "permission": {
               "type": "object",
@@ -1800,7 +1847,8 @@
                 "low",
                 "medium",
                 "high",
-                "xhigh"
+                "xhigh",
+                "max"
               ]
             },
             "textVerbosity": {
@@ -1881,7 +1929,8 @@
                           "low",
                           "medium",
                           "high",
-                          "xhigh"
+                          "xhigh",
+                          "max"
                         ]
                       },
                       "temperature": {
@@ -1947,7 +1996,8 @@
                               "low",
                               "medium",
                               "high",
-                              "xhigh"
+                              "xhigh",
+                              "max"
                             ]
                           },
                           "temperature": {
@@ -2047,6 +2097,9 @@
             "color": {
               "type": "string",
               "pattern": "^#[0-9A-Fa-f]{6}$"
+            },
+            "displayName": {
+              "type": "string"
             },
             "permission": {
               "type": "object",
@@ -2150,7 +2203,8 @@
                 "low",
                 "medium",
                 "high",
-                "xhigh"
+                "xhigh",
+                "max"
               ]
             },
             "textVerbosity": {
@@ -2231,7 +2285,8 @@
                           "low",
                           "medium",
                           "high",
-                          "xhigh"
+                          "xhigh",
+                          "max"
                         ]
                       },
                       "temperature": {
@@ -2297,7 +2352,8 @@
                               "low",
                               "medium",
                               "high",
-                              "xhigh"
+                              "xhigh",
+                              "max"
                             ]
                           },
                           "temperature": {
@@ -2397,6 +2453,9 @@
             "color": {
               "type": "string",
               "pattern": "^#[0-9A-Fa-f]{6}$"
+            },
+            "displayName": {
+              "type": "string"
             },
             "permission": {
               "type": "object",
@@ -2500,7 +2559,8 @@
                 "low",
                 "medium",
                 "high",
-                "xhigh"
+                "xhigh",
+                "max"
               ]
             },
             "textVerbosity": {
@@ -2581,7 +2641,8 @@
                           "low",
                           "medium",
                           "high",
-                          "xhigh"
+                          "xhigh",
+                          "max"
                         ]
                       },
                       "temperature": {
@@ -2647,7 +2708,8 @@
                               "low",
                               "medium",
                               "high",
-                              "xhigh"
+                              "xhigh",
+                              "max"
                             ]
                           },
                           "temperature": {
@@ -2747,6 +2809,9 @@
             "color": {
               "type": "string",
               "pattern": "^#[0-9A-Fa-f]{6}$"
+            },
+            "displayName": {
+              "type": "string"
             },
             "permission": {
               "type": "object",
@@ -2850,7 +2915,8 @@
                 "low",
                 "medium",
                 "high",
-                "xhigh"
+                "xhigh",
+                "max"
               ]
             },
             "textVerbosity": {
@@ -2931,7 +2997,8 @@
                           "low",
                           "medium",
                           "high",
-                          "xhigh"
+                          "xhigh",
+                          "max"
                         ]
                       },
                       "temperature": {
@@ -2997,7 +3064,8 @@
                               "low",
                               "medium",
                               "high",
-                              "xhigh"
+                              "xhigh",
+                              "max"
                             ]
                           },
                           "temperature": {
@@ -3097,6 +3165,9 @@
             "color": {
               "type": "string",
               "pattern": "^#[0-9A-Fa-f]{6}$"
+            },
+            "displayName": {
+              "type": "string"
             },
             "permission": {
               "type": "object",
@@ -3200,7 +3271,8 @@
                 "low",
                 "medium",
                 "high",
-                "xhigh"
+                "xhigh",
+                "max"
               ]
             },
             "textVerbosity": {
@@ -3281,7 +3353,8 @@
                           "low",
                           "medium",
                           "high",
-                          "xhigh"
+                          "xhigh",
+                          "max"
                         ]
                       },
                       "temperature": {
@@ -3347,7 +3420,8 @@
                               "low",
                               "medium",
                               "high",
-                              "xhigh"
+                              "xhigh",
+                              "max"
                             ]
                           },
                           "temperature": {
@@ -3447,6 +3521,9 @@
             "color": {
               "type": "string",
               "pattern": "^#[0-9A-Fa-f]{6}$"
+            },
+            "displayName": {
+              "type": "string"
             },
             "permission": {
               "type": "object",
@@ -3550,7 +3627,8 @@
                 "low",
                 "medium",
                 "high",
-                "xhigh"
+                "xhigh",
+                "max"
               ]
             },
             "textVerbosity": {
@@ -3631,7 +3709,8 @@
                           "low",
                           "medium",
                           "high",
-                          "xhigh"
+                          "xhigh",
+                          "max"
                         ]
                       },
                       "temperature": {
@@ -3697,7 +3776,8 @@
                               "low",
                               "medium",
                               "high",
-                              "xhigh"
+                              "xhigh",
+                              "max"
                             ]
                           },
                           "temperature": {
@@ -3797,6 +3877,9 @@
             "color": {
               "type": "string",
               "pattern": "^#[0-9A-Fa-f]{6}$"
+            },
+            "displayName": {
+              "type": "string"
             },
             "permission": {
               "type": "object",
@@ -3900,7 +3983,8 @@
                 "low",
                 "medium",
                 "high",
-                "xhigh"
+                "xhigh",
+                "max"
               ]
             },
             "textVerbosity": {
@@ -3981,7 +4065,8 @@
                           "low",
                           "medium",
                           "high",
-                          "xhigh"
+                          "xhigh",
+                          "max"
                         ]
                       },
                       "temperature": {
@@ -4047,7 +4132,8 @@
                               "low",
                               "medium",
                               "high",
-                              "xhigh"
+                              "xhigh",
+                              "max"
                             ]
                           },
                           "temperature": {
@@ -4147,6 +4233,9 @@
             "color": {
               "type": "string",
               "pattern": "^#[0-9A-Fa-f]{6}$"
+            },
+            "displayName": {
+              "type": "string"
             },
             "permission": {
               "type": "object",
@@ -4250,7 +4339,8 @@
                 "low",
                 "medium",
                 "high",
-                "xhigh"
+                "xhigh",
+                "max"
               ]
             },
             "textVerbosity": {
@@ -4331,7 +4421,8 @@
                           "low",
                           "medium",
                           "high",
-                          "xhigh"
+                          "xhigh",
+                          "max"
                         ]
                       },
                       "temperature": {
@@ -4397,7 +4488,8 @@
                               "low",
                               "medium",
                               "high",
-                              "xhigh"
+                              "xhigh",
+                              "max"
                             ]
                           },
                           "temperature": {
@@ -4497,6 +4589,9 @@
             "color": {
               "type": "string",
               "pattern": "^#[0-9A-Fa-f]{6}$"
+            },
+            "displayName": {
+              "type": "string"
             },
             "permission": {
               "type": "object",
@@ -4600,7 +4695,8 @@
                 "low",
                 "medium",
                 "high",
-                "xhigh"
+                "xhigh",
+                "max"
               ]
             },
             "textVerbosity": {
@@ -4681,7 +4777,8 @@
                           "low",
                           "medium",
                           "high",
-                          "xhigh"
+                          "xhigh",
+                          "max"
                         ]
                       },
                       "temperature": {
@@ -4747,7 +4844,8 @@
                               "low",
                               "medium",
                               "high",
-                              "xhigh"
+                              "xhigh",
+                              "max"
                             ]
                           },
                           "temperature": {
@@ -4847,6 +4945,9 @@
             "color": {
               "type": "string",
               "pattern": "^#[0-9A-Fa-f]{6}$"
+            },
+            "displayName": {
+              "type": "string"
             },
             "permission": {
               "type": "object",
@@ -4950,7 +5051,8 @@
                 "low",
                 "medium",
                 "high",
-                "xhigh"
+                "xhigh",
+                "max"
               ]
             },
             "textVerbosity": {
@@ -4996,19 +5098,9 @@
           "additionalProperties": false
         }
       },
-      "additionalProperties": false
-    },
-    "categories": {
-      "type": "object",
-      "propertyNames": {
-        "type": "string"
-      },
       "additionalProperties": {
         "type": "object",
         "properties": {
-          "description": {
-            "type": "string"
-          },
           "model": {
             "type": "string"
           },
@@ -5042,7 +5134,8 @@
                         "low",
                         "medium",
                         "high",
-                        "xhigh"
+                        "xhigh",
+                        "max"
                       ]
                     },
                     "temperature": {
@@ -5108,7 +5201,373 @@
                             "low",
                             "medium",
                             "high",
-                            "xhigh"
+                            "xhigh",
+                            "max"
+                          ]
+                        },
+                        "temperature": {
+                          "type": "number",
+                          "minimum": 0,
+                          "maximum": 2
+                        },
+                        "top_p": {
+                          "type": "number",
+                          "minimum": 0,
+                          "maximum": 1
+                        },
+                        "maxTokens": {
+                          "type": "number"
+                        },
+                        "thinking": {
+                          "type": "object",
+                          "properties": {
+                            "type": {
+                              "type": "string",
+                              "enum": [
+                                "enabled",
+                                "disabled"
+                              ]
+                            },
+                            "budgetTokens": {
+                              "type": "number"
+                            }
+                          },
+                          "required": [
+                            "type"
+                          ],
+                          "additionalProperties": false
+                        }
+                      },
+                      "required": [
+                        "model"
+                      ],
+                      "additionalProperties": false
+                    }
+                  ]
+                }
+              }
+            ]
+          },
+          "variant": {
+            "type": "string"
+          },
+          "category": {
+            "type": "string"
+          },
+          "skills": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "temperature": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 2
+          },
+          "top_p": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 1
+          },
+          "prompt": {
+            "type": "string"
+          },
+          "prompt_append": {
+            "type": "string"
+          },
+          "tools": {
+            "type": "object",
+            "propertyNames": {
+              "type": "string"
+            },
+            "additionalProperties": {
+              "type": "boolean"
+            }
+          },
+          "disable": {
+            "type": "boolean"
+          },
+          "description": {
+            "type": "string"
+          },
+          "mode": {
+            "type": "string",
+            "enum": [
+              "subagent",
+              "primary",
+              "all"
+            ]
+          },
+          "color": {
+            "type": "string",
+            "pattern": "^#[0-9A-Fa-f]{6}$"
+          },
+          "displayName": {
+            "type": "string"
+          },
+          "permission": {
+            "type": "object",
+            "properties": {
+              "edit": {
+                "type": "string",
+                "enum": [
+                  "ask",
+                  "allow",
+                  "deny"
+                ]
+              },
+              "bash": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "enum": [
+                      "ask",
+                      "allow",
+                      "deny"
+                    ]
+                  },
+                  {
+                    "type": "object",
+                    "propertyNames": {
+                      "type": "string"
+                    },
+                    "additionalProperties": {
+                      "type": "string",
+                      "enum": [
+                        "ask",
+                        "allow",
+                        "deny"
+                      ]
+                    }
+                  }
+                ]
+              },
+              "webfetch": {
+                "type": "string",
+                "enum": [
+                  "ask",
+                  "allow",
+                  "deny"
+                ]
+              },
+              "task": {
+                "type": "string",
+                "enum": [
+                  "ask",
+                  "allow",
+                  "deny"
+                ]
+              },
+              "doom_loop": {
+                "type": "string",
+                "enum": [
+                  "ask",
+                  "allow",
+                  "deny"
+                ]
+              },
+              "external_directory": {
+                "type": "string",
+                "enum": [
+                  "ask",
+                  "allow",
+                  "deny"
+                ]
+              }
+            },
+            "additionalProperties": false
+          },
+          "maxTokens": {
+            "type": "number"
+          },
+          "thinking": {
+            "type": "object",
+            "properties": {
+              "type": {
+                "type": "string",
+                "enum": [
+                  "enabled",
+                  "disabled"
+                ]
+              },
+              "budgetTokens": {
+                "type": "number"
+              }
+            },
+            "required": [
+              "type"
+            ],
+            "additionalProperties": false
+          },
+          "reasoningEffort": {
+            "type": "string",
+            "enum": [
+              "none",
+              "minimal",
+              "low",
+              "medium",
+              "high",
+              "xhigh",
+              "max"
+            ]
+          },
+          "textVerbosity": {
+            "type": "string",
+            "enum": [
+              "low",
+              "medium",
+              "high"
+            ]
+          },
+          "providerOptions": {
+            "type": "object",
+            "propertyNames": {
+              "type": "string"
+            },
+            "additionalProperties": {}
+          },
+          "ultrawork": {
+            "type": "object",
+            "properties": {
+              "model": {
+                "type": "string"
+              },
+              "variant": {
+                "type": "string"
+              }
+            },
+            "additionalProperties": false
+          },
+          "compaction": {
+            "type": "object",
+            "properties": {
+              "model": {
+                "type": "string"
+              },
+              "variant": {
+                "type": "string"
+              }
+            },
+            "additionalProperties": false
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    "categories": {
+      "type": "object",
+      "propertyNames": {
+        "type": "string"
+      },
+      "additionalProperties": {
+        "type": "object",
+        "properties": {
+          "description": {
+            "type": "string"
+          },
+          "model": {
+            "type": "string"
+          },
+          "fallback_models": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "model": {
+                      "type": "string"
+                    },
+                    "variant": {
+                      "type": "string"
+                    },
+                    "reasoningEffort": {
+                      "type": "string",
+                      "enum": [
+                        "none",
+                        "minimal",
+                        "low",
+                        "medium",
+                        "high",
+                        "xhigh",
+                        "max"
+                      ]
+                    },
+                    "temperature": {
+                      "type": "number",
+                      "minimum": 0,
+                      "maximum": 2
+                    },
+                    "top_p": {
+                      "type": "number",
+                      "minimum": 0,
+                      "maximum": 1
+                    },
+                    "maxTokens": {
+                      "type": "number"
+                    },
+                    "thinking": {
+                      "type": "object",
+                      "properties": {
+                        "type": {
+                          "type": "string",
+                          "enum": [
+                            "enabled",
+                            "disabled"
+                          ]
+                        },
+                        "budgetTokens": {
+                          "type": "number"
+                        }
+                      },
+                      "required": [
+                        "type"
+                      ],
+                      "additionalProperties": false
+                    }
+                  },
+                  "required": [
+                    "model"
+                  ],
+                  "additionalProperties": false
+                }
+              },
+              {
+                "type": "array",
+                "items": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "model": {
+                          "type": "string"
+                        },
+                        "variant": {
+                          "type": "string"
+                        },
+                        "reasoningEffort": {
+                          "type": "string",
+                          "enum": [
+                            "none",
+                            "minimal",
+                            "low",
+                            "medium",
+                            "high",
+                            "xhigh",
+                            "max"
                           ]
                         },
                         "temperature": {
@@ -5197,7 +5656,8 @@
               "low",
               "medium",
               "high",
-              "xhigh"
+              "xhigh",
+              "max"
             ]
           },
           "textVerbosity": {
@@ -5264,6 +5724,10 @@
           "additionalProperties": {
             "type": "boolean"
           }
+        },
+        "anthropic_provider": {
+          "type": "string",
+          "minLength": 1
         }
       },
       "additionalProperties": false
@@ -5689,6 +6153,10 @@
           "type": "number",
           "minimum": 10000
         },
+        "taskCleanupDelayMs": {
+          "type": "number",
+          "minimum": 60000
+        },
         "syncPollTimeoutMs": {
           "type": "number",
           "minimum": 60000
@@ -5891,6 +6359,196 @@
       ],
       "additionalProperties": false
     },
+    "i18n": {
+      "type": "object",
+      "properties": {
+        "locale": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    },
+    "team_mode": {
+      "type": "object",
+      "properties": {
+        "enabled": {
+          "default": false,
+          "type": "boolean"
+        },
+        "tmux_visualization": {
+          "default": false,
+          "type": "boolean"
+        },
+        "max_parallel_members": {
+          "default": 4,
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 8
+        },
+        "max_members": {
+          "default": 8,
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 8
+        },
+        "max_messages_per_run": {
+          "default": 10000,
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 9007199254740991
+        },
+        "max_wall_clock_minutes": {
+          "default": 120,
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 9007199254740991
+        },
+        "max_member_turns": {
+          "default": 500,
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 9007199254740991
+        },
+        "base_dir": {
+          "type": "string"
+        },
+        "message_payload_max_bytes": {
+          "default": 32768,
+          "type": "integer",
+          "minimum": 1024,
+          "maximum": 9007199254740991
+        },
+        "recipient_unread_max_bytes": {
+          "default": 262144,
+          "type": "integer",
+          "minimum": 1024,
+          "maximum": 9007199254740991
+        },
+        "mailbox_poll_interval_ms": {
+          "default": 3000,
+          "type": "integer",
+          "minimum": 500,
+          "maximum": 9007199254740991
+        }
+      },
+      "required": [
+        "enabled",
+        "tmux_visualization",
+        "max_parallel_members",
+        "max_members",
+        "max_messages_per_run",
+        "max_wall_clock_minutes",
+        "max_member_turns",
+        "message_payload_max_bytes",
+        "recipient_unread_max_bytes",
+        "mailbox_poll_interval_ms"
+      ],
+      "additionalProperties": false
+    },
+    "consensus": {
+      "type": "object",
+      "properties": {
+        "enabled": {
+          "type": "boolean"
+        },
+        "default_voter_count": {
+          "type": "integer",
+          "minimum": 2,
+          "maximum": 7
+        },
+        "default_voter_lineages": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "voter_timeout_ms": {
+          "type": "integer",
+          "minimum": 10000,
+          "maximum": 9007199254740991
+        },
+        "voter_reasoning_effort": {
+          "type": "string",
+          "enum": [
+            "none",
+            "minimal",
+            "low",
+            "medium",
+            "high",
+            "xhigh"
+          ]
+        },
+        "pre_question_gate": {
+          "type": "object",
+          "properties": {
+            "enabled": {
+              "type": "boolean"
+            },
+            "voter_count": {
+              "type": "integer",
+              "minimum": 2,
+              "maximum": 7
+            }
+          },
+          "additionalProperties": false
+        },
+        "post_test_gate": {
+          "type": "object",
+          "properties": {
+            "enabled": {
+              "type": "boolean"
+            },
+            "command_patterns": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "voter_count": {
+              "type": "integer",
+              "minimum": 2,
+              "maximum": 7
+            }
+          },
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
+    },
+    "keyword_detector": {
+      "type": "object",
+      "properties": {
+        "enabled_expansions": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": [
+              "ultrawork",
+              "search",
+              "analyze",
+              "team",
+              "hyperplan",
+              "hyperplan-ultrawork"
+            ]
+          }
+        },
+        "disabled_keywords": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": [
+              "ultrawork",
+              "search",
+              "analyze",
+              "team",
+              "hyperplan",
+              "hyperplan-ultrawork"
+            ]
+          }
+        }
+      },
+      "additionalProperties": false
+    },
     "babysitting": {
       "type": "object",
       "properties": {
@@ -6060,6 +6718,24 @@
       },
       "required": [
         "auto_commit"
+      ],
+      "additionalProperties": false
+    },
+    "default_mode": {
+      "type": "object",
+      "properties": {
+        "ultrawork": {
+          "default": false,
+          "type": "boolean"
+        },
+        "ralph_loop": {
+          "default": false,
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "ultrawork",
+        "ralph_loop"
       ],
       "additionalProperties": false
     },

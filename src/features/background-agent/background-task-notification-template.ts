@@ -11,16 +11,16 @@ export interface BackgroundTaskNotificationTask {
 }
 
 function formatAttemptModel(attempt: BackgroundTaskAttempt): string {
-  if (attempt.providerID && attempt.modelID) {
-    return `${attempt.providerID}/${attempt.modelID}`
+  if (attempt.providerId && attempt.modelId) {
+    return `${attempt.providerId}/${attempt.modelId}`
   }
 
-  if (attempt.modelID) {
-    return attempt.modelID
+  if (attempt.modelId) {
+    return attempt.modelId
   }
 
-  if (attempt.providerID) {
-    return attempt.providerID
+  if (attempt.providerId) {
+    return attempt.providerId
   }
 
   return "unknown-model"
@@ -34,7 +34,7 @@ function formatAttemptTimeline(task: BackgroundTaskNotificationTask): string {
   const lines = task.attempts
     .map((attempt) => {
       const attemptLines = [
-        `  - Attempt ${attempt.attemptNumber} — ${attempt.status.toUpperCase()} — ${formatAttemptModel(attempt)} — ${attempt.sessionID ?? "unknown"}`,
+        `  - Attempt ${attempt.attemptNumber} — ${attempt.status.toUpperCase()} — ${formatAttemptModel(attempt)} — ${attempt.sessionId ?? "unknown"}`,
       ]
 
       if (attempt.status !== "completed" && attempt.error) {
@@ -85,7 +85,7 @@ export function buildBackgroundTaskNotificationText(input: {
     const hasFailures = failedTasks.length > 0
     const header = hasFailures
       ? `[ALL BACKGROUND TASKS FINISHED - ${failedTasks.length} FAILED]`
-      : "[ALL BACKGROUND TASKS COMPLETE]"
+      : "[BACKGROUND TASK COMPLETED]\n[ALL BACKGROUND TASKS COMPLETE]"
 
     let body = ""
     if (succeededText) {
@@ -108,9 +108,10 @@ Use \`background_output(task_id="<id>")\` to retrieve each result.${hasFailures 
   }
 
   const isFailure = statusText !== "COMPLETED"
+  const header = isFailure ? `[BACKGROUND TASK ${statusText}]` : "[BACKGROUND TASK RESULT READY]"
 
   return `<system-reminder>
-[BACKGROUND TASK ${statusText}]
+${header}
 **ID:** \`${task.id}\`
 **Description:** ${safeDescription(task)}
 **Duration:** ${duration}${errorInfo}

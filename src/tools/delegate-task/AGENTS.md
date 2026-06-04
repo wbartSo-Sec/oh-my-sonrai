@@ -1,6 +1,6 @@
 # src/tools/delegate-task/ — Task Delegation Engine
 
-**Generated:** 2026-04-11
+**Generated:** 2026-05-15
 
 ## OVERVIEW
 
@@ -51,7 +51,7 @@ background-task.ts → BackgroundManager.launch() → (async polling) → backgr
 
 ## MODEL STRING PARSER
 
-`model-string-parser.ts` handles `"model variant"` format (e.g., `"gpt-5.3-codex medium"` → model=`gpt-5.3-codex`, variant=`medium`).
+`model-string-parser.ts` handles `"model variant"` format (e.g., `"gpt-5.5 medium"` → model=`gpt-5.5`, variant=`medium`).
 
 ## UNSTABLE AGENT TRACKING
 

@@ -47,6 +47,9 @@ describe("run telemetry isolation", () => {
     mock.module("./poll-for-completion", () => ({
       pollForCompletion: mock(async () => 0),
     }))
+    mock.module("./prompt-start", () => ({
+      waitForPromptStart: mock(async () => {}),
+    }))
     mock.module("./agent-profile-colors", () => ({
       loadAgentProfileColors: mock(async () => ({})),
     }))
@@ -64,8 +67,6 @@ describe("run telemetry isolation", () => {
         trackActive: () => {
           throw new Error("telemetry failed")
         },
-        capture: mock(() => {}),
-        captureException: mock(() => {}),
         shutdown: mock(async () => {
           throw new Error("shutdown failed")
         }),

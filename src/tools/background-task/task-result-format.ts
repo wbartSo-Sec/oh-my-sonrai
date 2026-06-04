@@ -4,19 +4,26 @@ import { consumeNewMessages } from "../../shared/session-cursor"
 import type { BackgroundOutputClient, BackgroundOutputMessagesResult } from "./clients"
 import { extractMessages, getErrorMessage } from "./session-messages"
 import { formatDuration } from "./time-format"
+import { getBackgroundOutputFetchTimeoutMs, withSdkCallTimeout } from "./with-sdk-call-timeout"
 
 function getTimeString(value: unknown): string {
   return typeof value === "string" ? value : ""
 }
 
 export async function formatTaskResult(task: BackgroundTask, client: BackgroundOutputClient): Promise<string> {
-  if (!task.sessionID) {
+  if (!task.sessionId) {
     return `Error: Task has no sessionID`
   }
 
-  const messagesResult: BackgroundOutputMessagesResult = await client.session.messages({
-    path: { id: task.sessionID },
-  })
+  let messagesResult: BackgroundOutputMessagesResult
+  try {
+    messagesResult = await withSdkCallTimeout(
+      client.session.messages({ path: { id: task.sessionId } }),
+      getBackgroundOutputFetchTimeoutMs(),
+    )
+  } catch (error) {
+    return `Error fetching messages: ${error instanceof Error ? error.message : String(error)}`
+  }
 
   const errorMessage = getErrorMessage(messagesResult)
   if (errorMessage) {
@@ -30,7 +37,7 @@ export async function formatTaskResult(task: BackgroundTask, client: BackgroundO
 Task ID: ${task.id}
 Description: ${task.description}
 Duration: ${formatDuration(task.startedAt ?? new Date(), task.completedAt)}
-Session ID: ${task.sessionID}
+Session ID: ${task.sessionId}
 
 ---
 
@@ -44,7 +51,7 @@ Session ID: ${task.sessionID}
 Task ID: ${task.id}
 Description: ${task.description}
 Duration: ${formatDuration(task.startedAt ?? new Date(), task.completedAt)}
-Session ID: ${task.sessionID}
+Session ID: ${task.sessionId}
 
 ---
 
@@ -67,14 +74,14 @@ Session ID: ${task.sessionID}
 Task ID: ${task.id}
 Description: ${task.description}
 Duration: ${formatDuration(task.startedAt ?? new Date(), task.completedAt)}
-Session ID: ${task.sessionID}
+Session ID: ${task.sessionId}
 
 ---
 
 Session error: ${sessionError}`
   }
 
-  const newMessages = consumeNewMessages(task.sessionID, sortedMessages)
+  const newMessages = consumeNewMessages(task.sessionId, sortedMessages)
   if (newMessages.length === 0) {
     const duration = formatDuration(task.startedAt ?? new Date(), task.completedAt)
     return `Task Result
@@ -82,7 +89,7 @@ Session error: ${sessionError}`
 Task ID: ${task.id}
 Description: ${task.description}
 Duration: ${duration}
-Session ID: ${task.sessionID}
+Session ID: ${task.sessionId}
 
 ---
 
@@ -123,7 +130,7 @@ Session ID: ${task.sessionID}
 Task ID: ${task.id}
 Description: ${task.description}
 Duration: ${duration}
-Session ID: ${task.sessionID}
+Session ID: ${task.sessionId}
 
 ---
 

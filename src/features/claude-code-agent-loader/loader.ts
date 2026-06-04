@@ -3,10 +3,10 @@ import { join } from "path"
 import { isMarkdownFile } from "../../shared/file-utils"
 import { getClaudeConfigDir } from "../../shared"
 import type { AgentScope, ClaudeCodeAgentConfig, LoadedAgent } from "./types"
-import { getOpenCodeConfigDir } from "../../shared/opencode-config-dir"
+import { getOpenCodeConfigDirs } from "../../shared/opencode-config-dir"
 import { parseMarkdownAgentFile } from "./agent-definitions-loader"
 
-function loadAgentsFromDir(agentsDir: string, scope: AgentScope): LoadedAgent[] {
+function loadAgentsFromDir(agentsDir: string, scope: AgentScope, anthropicProvider?: string): LoadedAgent[] {
   if (!existsSync(agentsDir)) {
     return []
   }
@@ -18,7 +18,7 @@ function loadAgentsFromDir(agentsDir: string, scope: AgentScope): LoadedAgent[] 
     if (!isMarkdownFile(entry)) continue
 
     const agentPath = join(agentsDir, entry.name)
-    const agent = parseMarkdownAgentFile(agentPath, scope)
+    const agent = parseMarkdownAgentFile(agentPath, scope, anthropicProvider)
 
     if (agent) {
       agents.push(agent)
@@ -28,9 +28,9 @@ function loadAgentsFromDir(agentsDir: string, scope: AgentScope): LoadedAgent[] 
   return agents
 }
 
-export function loadUserAgents(): Record<string, ClaudeCodeAgentConfig> {
+export function loadUserAgents(anthropicProvider?: string): Record<string, ClaudeCodeAgentConfig> {
   const userAgentsDir = join(getClaudeConfigDir(), "agents")
-  const agents = loadAgentsFromDir(userAgentsDir, "user")
+  const agents = loadAgentsFromDir(userAgentsDir, "user", anthropicProvider)
 
   const result: Record<string, ClaudeCodeAgentConfig> = Object.create(null)
   for (const agent of agents) {
@@ -39,9 +39,9 @@ export function loadUserAgents(): Record<string, ClaudeCodeAgentConfig> {
   return result
 }
 
-export function loadProjectAgents(directory?: string): Record<string, ClaudeCodeAgentConfig> {
+export function loadProjectAgents(directory?: string, anthropicProvider?: string): Record<string, ClaudeCodeAgentConfig> {
   const projectAgentsDir = join(directory ?? process.cwd(), ".claude", "agents")
-  const agents = loadAgentsFromDir(projectAgentsDir, "project")
+  const agents = loadAgentsFromDir(projectAgentsDir, "project", anthropicProvider)
 
   const result: Record<string, ClaudeCodeAgentConfig> = Object.create(null)
   for (const agent of agents) {
@@ -51,14 +51,20 @@ export function loadProjectAgents(directory?: string): Record<string, ClaudeCode
 }
 
 export function loadOpencodeGlobalAgents(): Record<string, ClaudeCodeAgentConfig> {
-  const configDir = getOpenCodeConfigDir({ binary: "opencode" })
-  const opencodeAgentsDir = join(configDir, "agents")
-  const agents = loadAgentsFromDir(opencodeAgentsDir, "opencode")
-
   const result: Record<string, ClaudeCodeAgentConfig> = Object.create(null)
-  for (const agent of agents) {
-    result[agent.name] = agent.config
+  const configDirs = getOpenCodeConfigDirs({ binary: "opencode" })
+
+  for (const configDir of configDirs) {
+    const opencodeAgentsDir = join(configDir, "agents")
+    const agents = loadAgentsFromDir(opencodeAgentsDir, "opencode")
+
+    for (const agent of agents) {
+      if (!(agent.name in result)) {
+        result[agent.name] = agent.config
+      }
+    }
   }
+
   return result
 }
 

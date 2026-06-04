@@ -12,6 +12,7 @@ import { clearSkillCache } from "../../../features/opencode-skill-loader/skill-c
 import type { LoadedSkill } from "../../../features/opencode-skill-loader/types"
 import type { CommandInfo } from "../../slashcommand/types"
 import type { Tool as McpTool } from "@modelcontextprotocol/sdk/types.js"
+import { unsafeTestValue } from "../../../../test-support/unsafe-test-value"
 
 const originalReadFileSync = fs.readFileSync.bind(fs)
 
@@ -97,7 +98,7 @@ const mockContext: ToolContext = {
 }
 
 describe("skill tool - synchronous description", () => {
-  it("includes available_items immediately when skills are pre-provided", () => {
+  it("omits pre-provided skills from available_items by default", () => {
     // given
     const loadedSkills = [createMockSkill("test-skill")]
 
@@ -105,11 +106,11 @@ describe("skill tool - synchronous description", () => {
     const tool = createSkillTool({ skills: loadedSkills })
 
     // then
-    expect(tool.description).toContain("<available_items>")
-    expect(tool.description).toContain("test-skill")
+    expect(tool.description).not.toContain("<available_items>")
+    expect(tool.description).not.toContain("test-skill")
   })
 
-  it("includes all pre-provided skills in available_items immediately", () => {
+  it("includes all pre-provided skills in available_items when explicitly requested", () => {
     // given
     const loadedSkills = [
       createMockSkill("playwright"),
@@ -118,7 +119,10 @@ describe("skill tool - synchronous description", () => {
     ]
 
     // when
-    const tool = createSkillTool({ skills: loadedSkills })
+    const tool = createSkillTool({
+      skills: loadedSkills,
+      includeSkillsInDescription: true,
+    })
 
     // then
     expect(tool.description).toContain("<available_items>")
@@ -205,7 +209,7 @@ describe("skill tool - agent restriction", () => {
     // given
     const loadedSkills = [createMockSkill("sisyphus-only-skill", { agent: "sisyphus" })]
     const tool = createSkillTool({ skills: loadedSkills })
-    const contextWithoutAgent = { ...mockContext, agent: undefined as unknown as string }
+    const contextWithoutAgent = { ...mockContext, agent: unsafeTestValue<string>(undefined) }
 
     // when / #then
     return expect(tool.execute({ name: "sisyphus-only-skill" }, contextWithoutAgent)).rejects.toThrow(
@@ -479,7 +483,11 @@ describe("skill tool - ordering and priority", () => {
     ]
 
     //#when: creating tool with both
-    const tool = createSkillTool({ skills, commands })
+    const tool = createSkillTool({
+      skills,
+      commands,
+      includeSkillsInDescription: true,
+    })
 
     //#then: skills should appear as <command> items with / prefix, listed before regular commands
     const desc = tool.description
@@ -501,7 +509,10 @@ describe("skill tool - ordering and priority", () => {
     ]
 
     //#when: creating tool
-    const tool = createSkillTool({ skills })
+    const tool = createSkillTool({
+      skills,
+      includeSkillsInDescription: true,
+    })
 
     //#then: should be sorted by priority
     const desc = tool.description
@@ -547,9 +558,9 @@ describe("skill tool - ordering and priority", () => {
     //#when: creating tool
     const tool = createSkillTool({ skills, commands })
 
-    //#then: should include priority info
+    //#then
     expect(tool.description).toContain("Priority: project > user > opencode > builtin/plugin")
-    expect(tool.description).toContain("Skills listed before commands")
+    expect(tool.description).not.toContain("Skills listed before commands")
   })
 
   it("uses <available_items> wrapper with unified command format", () => {
@@ -560,12 +571,12 @@ describe("skill tool - ordering and priority", () => {
     //#when: creating tool
     const tool = createSkillTool({ skills, commands })
 
-    //#then: should use unified wrapper with all items as commands
+    //#then
     expect(tool.description).toContain("<available_items>")
     expect(tool.description).toContain("</available_items>")
     expect(tool.description).not.toContain("<skill>")
     expect(tool.description).toContain("<command>")
-    expect(tool.description).toContain("/test-skill")
+    expect(tool.description).not.toContain("/test-skill")
     expect(tool.description).toContain("/test-cmd")
   })
 })
@@ -635,6 +646,56 @@ describe("skill tool - dynamic discovery", () => {
     expect(result).not.toContain("SHOULD_BE_OVERRIDDEN")
   })
 })
+describe("skill tool - agent-restricted skill visibility in description", () => {
+  it("excludes agent-restricted skill from description <available_items>", () => {
+    // given: a skill restricted to oracle, and a public skill
+    const loadedSkills = [
+      createMockSkill("public-skill"),
+      createMockSkill("oracle-only-skill", { agent: "oracle" }),
+    ]
+
+    // when: tool is created with these skills (as tool-registry would inject them)
+    const tool = createSkillTool({
+      skills: loadedSkills,
+      includeSkillsInDescription: true,
+    })
+
+    // then: oracle-only skill must NOT appear in the description
+    expect(tool.description).toContain("public-skill")
+    expect(tool.description).not.toContain("oracle-only-skill")
+  })
+
+  it("includes public skill (no agent field) in description regardless of context", () => {
+    // given
+    const loadedSkills = [createMockSkill("public-skill")]
+
+    // when
+    const tool = createSkillTool({
+      skills: loadedSkills,
+      includeSkillsInDescription: true,
+    })
+
+    // then
+    expect(tool.description).toContain("public-skill")
+  })
+
+  it("execute still works for agent-restricted skill when called with correct agent context", async () => {
+    // given: tool created WITHOUT the restricted skill in description list,
+    // but the full skill list is available for execute via getSkills()
+    // (simulating what tool-registry does: description uses filtered list,
+    //  but execute discovers from disk / full list)
+    const restrictedSkill = createMockSkill("oracle-only-skill", { agent: "oracle" })
+    const tool = createSkillTool({ skills: [restrictedSkill] })
+    const oracleContext = { ...mockContext, agent: "oracle" }
+
+    // when: oracle agent explicitly calls the skill
+    const result = await tool.execute({ name: "oracle-only-skill" }, oracleContext)
+
+    // then: execution succeeds
+    expect(result).toContain("oracle-only-skill")
+  })
+})
+
 describe("skill tool - dynamic description cache invalidation", () => {
   it("keeps description available after execute misses a skill", async () => {
     // given
@@ -683,7 +744,7 @@ describe("skill tool - dynamic description cache invalidation", () => {
       expect(cachedError?.message).toContain('Skill or command "second-skill" not found.')
 
       clearSkillCache()
-      const refreshedTool = createSkillTool({})
+      const refreshedTool = createSkillTool({ includeSkillsInDescription: true })
 
       // when
       const refreshedResult = await refreshedTool.execute({ name: "second-skill" }, mockContext)
@@ -709,6 +770,7 @@ describe("skill tool - browserProvider forwarding", () => {
     const tool = createSkillTool({
       skills: [agentBrowserSkill],
       browserProvider: "agent-browser",
+      includeSkillsInDescription: true,
     })
 
     // when: executing skill("agent-browser")
@@ -726,6 +788,7 @@ describe("skill tool - browserProvider forwarding", () => {
     const tool = createSkillTool({
       skills: [agentBrowserSkill],
       browserProvider: "agent-browser",
+      includeSkillsInDescription: true,
     })
 
     // then
@@ -738,6 +801,7 @@ describe("skill tool - nativeSkills integration", () => {
     //#given
     const tool = createSkillTool({
       skills: [createMockSkill("seeded-skill")],
+      includeSkillsInDescription: true,
       nativeSkills: {
         all() {
           return [{
@@ -786,6 +850,31 @@ describe("skill tool - nativeSkills integration", () => {
     //#then
     expect(result).toContain("external-plugin-skill")
     expect(result).toContain("External plugin skill body")
+  })
+})
+
+describe("skill tool - bundled security skills", () => {
+  it("loads security-research and security-review when the plugin skill context pre-seeds them", async () => {
+    //#given
+    const { builtinToLoadedSkill } = await import("../../../features/opencode-skill-loader/merger/builtin-skill-converter")
+    const { securityResearchSkill, securityReviewSkill } = await import("../../../features/builtin-skills/skills/index")
+    const tool = createSkillTool({
+      directory: "/test",
+      skills: [
+        builtinToLoadedSkill(securityResearchSkill),
+        builtinToLoadedSkill(securityReviewSkill),
+      ],
+    })
+
+    //#when
+    const researchResult = await tool.execute({ name: "security-research" }, mockContext)
+    const reviewResult = await tool.execute({ name: "security-review" }, mockContext)
+
+    //#then
+    expect(researchResult).toContain("## Skill: security-research")
+    expect(researchResult).toContain("Security Research - Team Mode Vulnerability Audit")
+    expect(reviewResult).toContain("## Skill: security-review")
+    expect(reviewResult).toContain("Security Research - Team Mode Vulnerability Audit")
   })
 })
 
